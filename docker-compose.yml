@@ -1,0 +1,96 @@
+version: '3.8'
+services:
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        PUID: ${PUID:-1001}
+        PGID: ${PGID:-1001}
+    container_name: monorepo_php
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www:cached
+      - ./docker/php/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini:ro
+    networks:
+      - monorepo
+    depends_on:
+      - mysql
+      - redis
+
+  workspace:
+    build:
+      context: .
+      dockerfile: docker/workspace/Dockerfile
+      args:
+        NODE_VERSION: 20
+        PUID: ${PUID:-1001}
+        PGID: ${PGID:-1001}
+    container_name: monorepo_workspace
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./:/var/www:cached
+      - ~/.ssh:/home/developer/.ssh:ro
+    working_dir: /var/www/apps/api
+    ports:
+      - "5173:5173"
+      - "3000:3000"
+    networks:
+      - monorepo
+    depends_on:
+      - php
+      - mysql
+      - redis
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: monorepo_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - monorepo
+    depends_on:
+      - php
+
+  mysql:
+    image: mysql:8.0
+    container_name: monorepo_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: monorepo
+      MYSQL_USER: monorepo
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - monorepo
+
+  redis:
+    image: redis:7-alpine
+    container_name: monorepo_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - monorepo
+
+volumes:
+  db_data:
+  redis_data:
+
+
+networks:
+  monorepo:
+    driver: bridge

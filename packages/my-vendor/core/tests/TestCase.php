@@ -17,7 +17,7 @@ class TestCase extends OrchestraTestCase
         $this->cleanUpTenantDatabases();
 
         // Run landlord migrations (creates the 'tenants' table)
-        $this->artisan('migrate', ['--database' => 'landlord', '--path' => __DIR__.'/../database/migrations/landlord'])->run();
+        $this->artisan('migrate', ['--database' => 'landlord', '--path' => __DIR__.'/../database/migrations/landlord', '--realpath' => true])->run();
     }
 
     protected function getPackageProviders($app)
@@ -25,6 +25,7 @@ class TestCase extends OrchestraTestCase
         return [
             CoreServiceProvider::class,
             MultitenancyServiceProvider::class,
+            \Spatie\Permission\PermissionServiceProvider::class,
         ];
     }
 

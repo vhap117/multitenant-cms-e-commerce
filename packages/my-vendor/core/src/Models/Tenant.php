@@ -11,6 +11,12 @@ class Tenant extends SpatieTenant
     use HasFactory;
 
     /**
+     * Force this model to ALWAYS use the landlord database connection.
+     * * @var string
+     */
+    protected $connection = 'landlord';
+
+    /**
      * Instruct Laravel to use your package's specific factory.
      */
     protected static function newFactory()

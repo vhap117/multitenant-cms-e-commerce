@@ -4,7 +4,7 @@ namespace VHAP\Core\Provisioners;
 
 use VHAP\Core\Contracts\TenantAdminProvisioner;
 use Spatie\Multitenancy\Models\Tenant;
-use Illuminate\Foundation\Auth\User;
+use VHAP\Core\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 

@@ -4,7 +4,7 @@ namespace VHAP\Core\Actions\Pipes;
 
 use Closure;
 use Illuminate\Support\Facades\Artisan;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 
 class RunTenantMigrations
 {
@@ -17,7 +17,7 @@ class RunTenantMigrations
 
         Artisan::call('migrate', [
             '--database' => 'tenant',
-            '--path'     => 'database/migrations/tenant',
+            '--path'     => database_path('migrations/tenant'),
             '--force'    => true,
         ]);
 

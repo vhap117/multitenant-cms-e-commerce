@@ -3,8 +3,9 @@
 namespace VHAP\Core\Tests\Unit\Actions\Pipes;
 
 use Illuminate\Support\Facades\Artisan;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use VHAP\Core\Actions\Pipes\RunTenantMigrations;
+use Illuminate\Contracts\Console\Kernel;
 use VHAP\Core\Tests\TestCase;
 
 class RunTenantMigrationsTest extends TestCase
@@ -18,13 +19,15 @@ class RunTenantMigrationsTest extends TestCase
         // 1. We mock the Artisan facade to intercept the migration command safely
         // You generally shouldn't run true migrations in a unit test of an action,
         // you just need to know the Action requested Laravel to run them!
-        Artisan::shouldReceive('call')
-            ->once()
-            ->with('migrate', [
-                '--database' => 'tenant',
-                '--path'     => 'database/migrations/tenant', // Points to where tenant migrations live
-                '--force'    => true,                         // Crucial if code runs in production
-            ]);
+        $this->mock(Kernel::class, function ($mock) {
+            $mock->shouldReceive('call')
+                 ->once()
+                 ->with('migrate', [
+                     '--database' => 'tenant',
+                     '--path'     => database_path('migrations/tenant'),
+                     '--force'    => true,
+                 ]);
+        });
 
         // 2. Mock pipeline continuation
         $nextWasCalled = false;

@@ -3,7 +3,7 @@
 namespace VHAP\Core\Tests\Unit\Actions\Pipes;
 
 use Mockery;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use VHAP\Core\Actions\Pipes\CreateTenantDatabase;
 use VHAP\Core\Contracts\TenantDatabaseCreator;
 use VHAP\Core\Tests\TestCase;

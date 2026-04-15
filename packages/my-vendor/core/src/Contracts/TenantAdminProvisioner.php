@@ -2,7 +2,7 @@
 
 namespace VHAP\Core\Contracts;
 
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 
 interface TenantAdminProvisioner
 {

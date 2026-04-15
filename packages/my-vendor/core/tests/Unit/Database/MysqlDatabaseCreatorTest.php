@@ -3,7 +3,7 @@
 namespace VHAP\Core\Tests\Unit\Database;
 
 use Illuminate\Support\Facades\DB;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use VHAP\Core\Database\MysqlDatabaseCreator;
 use VHAP\Core\Tests\TestCase;
 use Mockery;

@@ -3,7 +3,7 @@
 namespace VHAP\Core\Database;
 
 use VHAP\Core\Contracts\TenantDatabaseCreator;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 
 class MysqlDatabaseCreator implements TenantDatabaseCreator

@@ -3,7 +3,7 @@
 namespace VHAP\Core\Tests\Unit\Database;
 
 use Illuminate\Support\Facades\File;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use VHAP\Core\Database\SqliteDatabaseCreator;
 use VHAP\Core\Tests\TestCase;
 

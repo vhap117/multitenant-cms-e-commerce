@@ -3,7 +3,7 @@
 namespace VHAP\Core\Actions\Pipes;
 
 use VHAP\Core\Contracts\TenantDatabaseCreator;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use Closure;
 
 class CreateTenantDatabase

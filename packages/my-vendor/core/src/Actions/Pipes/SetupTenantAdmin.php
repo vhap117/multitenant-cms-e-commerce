@@ -3,7 +3,7 @@
 namespace VHAP\Core\Actions\Pipes;
 
 use Closure;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use VHAP\Core\Contracts\TenantAdminProvisioner;
 
 class SetupTenantAdmin

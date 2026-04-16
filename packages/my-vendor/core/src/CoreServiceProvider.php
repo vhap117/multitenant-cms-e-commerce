@@ -13,6 +13,19 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Add auth guard and provider configuration dynamically
+        config([
+            'auth.guards.landlord' => array_merge([
+                'driver' => 'session',
+                'provider' => 'landlord_users',
+            ], config('auth.guards.landlord', [])),
+            
+            'auth.providers.landlord_users' => array_merge([
+                'driver' => 'eloquent',
+                'model' => \VHAP\Core\Models\LandlordUser::class,
+            ], config('auth.providers.landlord_users', [])),
+        ]);
+
         $this->app->bind(TenantDatabaseCreator::class, function ($app) {
             $driver = config('database.connections.tenant.driver');
 
@@ -37,6 +50,10 @@ class CoreServiceProvider extends ServiceProvider
         // 2. Publish Assets to the Host Application
         if ($this->app->runningInConsole()) {
             
+            $this->commands([
+                \VHAP\Core\Console\Commands\InstallLandlordCommand::class,
+            ]);
+
             // Publish configurations
             // $this->publishes([
             //     __DIR__ . '/../config/core.php' => config_path('vendor-core.php'),

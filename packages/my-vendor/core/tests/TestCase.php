@@ -50,6 +50,13 @@ class TestCase extends OrchestraTestCase
         // 3. Configure Spatie Multitenancy
         $app['config']->set('multitenancy.tenant_database_connection_name', 'tenant');
         $app['config']->set('multitenancy.landlord_database_connection_name', 'landlord');
+
+        // Tell Spatie to use your custom package models
+        $app['config']->set('permission.models.role', \VHAP\Core\Models\Role::class);
+        $app['config']->set('permission.models.permission', \VHAP\Core\Models\Permission::class);
+        
+        // Ensure Spatie's overall DB connection is explicitly set
+        $app['config']->set('permission.database_connection', 'tenant');
     }
 
     protected function cleanUpTenantDatabases()

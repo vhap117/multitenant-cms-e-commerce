@@ -74,6 +74,9 @@ class ProvisionNewTenantActionTest extends TestCase
         $dummyDbPath = __DIR__ . '/dummy_tenant.sqlite';
         File::put($dummyDbPath, ''); // Create a physical file to simulate the first pipe working
 
+        // SILENCE the logger via config instead of Mockery to prevent Exception Handler Leaks
+        config(['logging.default' => 'null']);
+        
         // The first pipe succeeds (we simulate it just passing the data)
         $this->mockPipe(CreateTenantDatabase::class);
         

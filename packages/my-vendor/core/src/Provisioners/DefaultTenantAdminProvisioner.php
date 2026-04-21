@@ -3,7 +3,7 @@
 namespace VHAP\Core\Provisioners;
 
 use VHAP\Core\Contracts\TenantAdminProvisioner;
-use Spatie\Multitenancy\Models\Tenant;
+use VHAP\Core\Models\Tenant;
 use VHAP\Core\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;

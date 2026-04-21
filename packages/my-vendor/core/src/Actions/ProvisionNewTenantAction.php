@@ -5,6 +5,7 @@ namespace VHAP\Core\Actions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Pipeline;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 use VHAP\Core\Models\Tenant;
 use VHAP\Core\Actions\Pipes\CreateTenantDatabase;
 use VHAP\Core\Actions\Pipes\RunTenantMigrations;
@@ -66,7 +67,7 @@ class ProvisionNewTenantAction
         });
     }
 
-    /**
+/**
      * Clean up physical files if testing with SQLite.
      */
     protected function cleanupFailedDatabase(?string $databaseName): void
@@ -77,8 +78,11 @@ class ProvisionNewTenantAction
 
         $driver = config('database.connections.tenant.driver');
         
-        if ($driver === 'sqlite' && file_exists($databaseName)) {
-            @unlink($databaseName);
+        if ($driver === 'sqlite' && File::exists($databaseName)) {
+            // FORCE PHP/PDO to close the connection and release the OS file lock
+            DB::purge('tenant'); 
+            
+            File::delete($databaseName); 
         }
     }
 }

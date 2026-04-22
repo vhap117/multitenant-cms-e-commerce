@@ -4,7 +4,7 @@ namespace VHAP\Core\Tests\Unit\Actions\Pipes;
 
 use Illuminate\Support\Facades\Artisan;
 use VHAP\Core\Models\Tenant;
-use VHAP\Core\Actions\Pipes\RunTenantMigrations;
+use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
 use Illuminate\Contracts\Console\Kernel;
 use VHAP\Core\Tests\TestCase;
 

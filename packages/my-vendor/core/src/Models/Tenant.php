@@ -17,6 +17,17 @@ class Tenant extends SpatieTenant
     protected $connection = 'landlord';
 
     /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'domain',
+        'database',
+    ];
+
+    /**
      * Instruct Laravel to use your package's specific factory.
      */
     protected static function newFactory()

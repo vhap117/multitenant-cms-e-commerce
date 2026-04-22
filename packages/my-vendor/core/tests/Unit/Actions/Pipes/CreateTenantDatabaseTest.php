@@ -4,7 +4,7 @@ namespace VHAP\Core\Tests\Unit\Actions\Pipes;
 
 use Mockery;
 use VHAP\Core\Models\Tenant;
-use VHAP\Core\Actions\Pipes\CreateTenantDatabase;
+use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
 use VHAP\Core\Contracts\TenantDatabaseCreator;
 use VHAP\Core\Tests\TestCase;
 

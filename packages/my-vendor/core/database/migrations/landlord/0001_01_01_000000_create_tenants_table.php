@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
+     * Force this migration to ALWAYS run on the landlord connection.
+     * @var string
+     */
+    protected $connection = 'landlord';
+    /**
      * Run the migrations.
      */
     public function up(): void

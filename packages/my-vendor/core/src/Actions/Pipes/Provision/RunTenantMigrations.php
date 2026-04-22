@@ -1,6 +1,6 @@
 <?php
 
-namespace VHAP\Core\Actions\Pipes;
+namespace VHAP\Core\Actions\Pipes\Provision;
 
 use Closure;
 use Illuminate\Support\Facades\Artisan;

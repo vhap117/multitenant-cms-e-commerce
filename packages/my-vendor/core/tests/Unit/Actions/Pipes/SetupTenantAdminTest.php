@@ -4,7 +4,7 @@ namespace VHAP\Core\Tests\Unit\Actions\Pipes;
 
 use Mockery;
 use VHAP\Core\Models\Tenant;
-use VHAP\Core\Actions\Pipes\SetupTenantAdmin;
+use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use VHAP\Core\Contracts\TenantAdminProvisioner;
 use VHAP\Core\Tests\TestCase;
 

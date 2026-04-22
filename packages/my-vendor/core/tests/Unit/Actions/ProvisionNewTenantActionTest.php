@@ -4,9 +4,9 @@ namespace VHAP\Core\Tests\Unit\Actions;
 
 use VHAP\Core\Tests\TestCase;
 use VHAP\Core\Actions\ProvisionNewTenantAction;
-use VHAP\Core\Actions\Pipes\CreateTenantDatabase;
-use VHAP\Core\Actions\Pipes\RunTenantMigrations;
-use VHAP\Core\Actions\Pipes\SetupTenantAdmin;
+use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
+use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
+use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use VHAP\Core\Models\Tenant;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,17 +18,14 @@ class ProvisionNewTenantActionTest extends TestCase
     {
         parent::setUp();
         
-        // Ensure landlord connection is explicitly set to SQLite memory
         config(['database.connections.landlord' => [
             'driver'   => 'sqlite',
             'database' => ':memory:',
             'prefix'   => '',
         ]]);
 
-        // Ensure tenant driver is sqlite to test the physical file cleanup logic
         config(['database.connections.tenant.driver' => 'sqlite']);
 
-        // Run the landlord migration to create the 'tenants' table in memory
         $this->artisan('migrate', [
             '--database' => 'landlord', 
             '--path'     => __DIR__.'/../../../../database/migrations/landlord',
@@ -39,12 +36,10 @@ class ProvisionNewTenantActionTest extends TestCase
     #[Test]
     public function it_successfully_executes_the_pipeline_and_saves_the_tenant()
     {
-        // 1. Arrange
-        // We mock all the pipes to simply pass the $tenant to the $next closure.
-        // This proves the pipeline connects them without actually running their heavy logic.
-        $this->mockPipe(CreateTenantDatabase::class);
-        $this->mockPipe(RunTenantMigrations::class);
-        $this->mockPipe(SetupTenantAdmin::class);
+        // 1. Arrange - Use native anonymous classes instead of Mockery
+        $this->bindFakePipe(CreateTenantDatabase::class);
+        $this->bindFakePipe(RunTenantMigrations::class);
+        $this->bindFakePipe(SetupTenantAdmin::class);
 
         $action = new ProvisionNewTenantAction();
         $tenantData = [
@@ -59,7 +54,6 @@ class ProvisionNewTenantActionTest extends TestCase
         // 3. Assert
         $this->assertInstanceOf(Tenant::class, $tenant);
         
-        // Verify the transaction committed the record to the landlord database
         $this->assertDatabaseHas('tenants', [
             'name' => 'Acme Corp',
             'domain' => 'acme.myapp.com',
@@ -71,23 +65,35 @@ class ProvisionNewTenantActionTest extends TestCase
     public function it_rolls_back_the_database_and_cleans_up_files_if_a_pipe_fails()
     {
         // 1. Arrange
-        $dummyDbPath = __DIR__ . '/dummy_tenant.sqlite';
-        File::put($dummyDbPath, ''); // Create a physical file to simulate the first pipe working
+        $dummyDbPath = 'dummy_tenant.sqlite';
 
-        // SILENCE the logger via config instead of Mockery to prevent Exception Handler Leaks
-        config(['logging.default' => 'null']);
-        
-        // The first pipe succeeds (we simulate it just passing the data)
-        $this->mockPipe(CreateTenantDatabase::class);
-        
-        // The second pipe FAILS (simulating a migration error)
-        $this->mock(RunTenantMigrations::class, function ($mock) {
-            $mock->shouldReceive('handle')->once()->andThrow(new Exception('Migration syntax error!'));
+        // MOCK THE FILE SYSTEM: 
+        // We tell Laravel to expect a deletion attempt, without touching the physical OS.
+        // This guarantees zero Error Handler leaks from physical OS file locks.
+        File::shouldReceive('exists')->with($dummyDbPath)->andReturn(true);
+        File::shouldReceive('delete')->with($dummyDbPath)->once()->andReturn(true);
+
+        // The first pipe succeeds
+        $this->bindFakePipe(CreateTenantDatabase::class);
+
+        // NATIVE EXCEPTION BINDING:
+        // We use a pure PHP anonymous class instead of Mockery to throw the error.
+        // This guarantees zero Exception Handler leaks from Mockery's internal tracking.
+        $this->app->bind(RunTenantMigrations::class, function () {
+            return new class {
+                public function handle($tenant, $next) {
+                    throw new Exception('Migration syntax error!');
+                }
+            };
         });
 
-        // The third pipe should never be reached
-        $this->mock(SetupTenantAdmin::class, function ($mock) {
-            $mock->shouldNotReceive('handle');
+        // The third pipe should never be reached. If it is, this forces a failure.
+        $this->app->bind(SetupTenantAdmin::class, function () {
+            return new class {
+                public function handle($tenant, $next) {
+                    throw new Exception('Pipeline did not halt! This pipe should not have executed.');
+                }
+            };
         });
 
         $action = new ProvisionNewTenantAction();
@@ -105,25 +111,29 @@ class ProvisionNewTenantActionTest extends TestCase
             $this->assertEquals('Migration syntax error!', $e->getMessage());
         }
 
-        // 3. Verify Rollback & Cleanup
+        // 3. Verify Rollback
         // The database transaction should have rolled back the insert
         $this->assertDatabaseMissing('tenants', [
             'domain' => 'bad.myapp.com',
         ], 'landlord');
 
-        // The catch block should have deleted the physical sqlite file
-        $this->assertFalse(File::exists($dummyDbPath), 'The physical SQLite file was not cleaned up after the pipeline failed.');
+        // Note: We no longer need to assert File::exists() because the 
+        // File::shouldReceive()->once() mock at the top of the test already 
+        // guarantees the deletion logic was triggered successfully.
     }
 
     /**
-     * Helper method to quickly mock a pipe that just passes data forward.
+     * Helper method to bind a fake pipe directly into the Service Container.
+     * This is safer than Mockery for pipeline testing because it avoids handler conflicts.
      */
-    protected function mockPipe(string $pipeClass): void
+    protected function bindFakePipe(string $pipeClass): void
     {
-        $this->mock($pipeClass, function ($mock) {
-            $mock->shouldReceive('handle')->once()->andReturnUsing(function ($tenant, $next) {
-                return $next($tenant); // Move to the next pipe
-            });
+        $this->app->bind($pipeClass, function () {
+            return new class {
+                public function handle($tenant, $next) {
+                    return $next($tenant); // Move to the next pipe
+                }
+            };
         });
     }
 }

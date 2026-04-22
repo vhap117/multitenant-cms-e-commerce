@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Pipeline;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use VHAP\Core\Models\Tenant;
-use VHAP\Core\Actions\Pipes\CreateTenantDatabase;
-use VHAP\Core\Actions\Pipes\RunTenantMigrations;
-use VHAP\Core\Actions\Pipes\SetupTenantAdmin;
+use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
+use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
+use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use Throwable;
 
 class ProvisionNewTenantAction

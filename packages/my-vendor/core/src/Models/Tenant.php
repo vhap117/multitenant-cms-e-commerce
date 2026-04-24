@@ -25,6 +25,7 @@ class Tenant extends SpatieTenant
         'name',
         'domain',
         'database',
+        'is_active',
     ];
 
     /**

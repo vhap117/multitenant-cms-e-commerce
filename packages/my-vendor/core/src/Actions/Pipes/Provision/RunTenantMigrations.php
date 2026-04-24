@@ -10,14 +10,18 @@ class RunTenantMigrations
 {
     public function handle(Tenant $tenant, Closure $next)
     {
-        // This is the magic Spatie method!
-        // It dynamically updates the 'tenant' connection in config/database.php
-        // to point to $tenant->database behind the scenes.
         $tenant->makeCurrent();
+
+        // 1. Fetch the path dynamically from config, falling back to the default
+        $migrationPath = config(
+            'core.tenant_migrations_path', 
+            database_path('migrations/tenant')
+        );
 
         Artisan::call('migrate', [
             '--database' => 'tenant',
-            '--path'     => database_path('migrations/tenant'),
+            '--path'     => $migrationPath, 
+            '--realpath' => true,
             '--force'    => true,
         ]);
 

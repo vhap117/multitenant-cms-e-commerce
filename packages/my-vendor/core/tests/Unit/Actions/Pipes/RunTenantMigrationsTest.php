@@ -16,15 +16,21 @@ class RunTenantMigrationsTest extends TestCase
         $tenant = new Tenant();
         $pipe = new RunTenantMigrations();
 
+        $expectedPath = config(
+             'core.tenant_migrations_path', 
+             database_path('migrations/tenant')
+        );
+
         // 1. We mock the Artisan facade to intercept the migration command safely
         // You generally shouldn't run true migrations in a unit test of an action,
         // you just need to know the Action requested Laravel to run them!
-        $this->mock(Kernel::class, function ($mock) {
+        $this->mock(Kernel::class, function ($mock) use ($expectedPath) {
             $mock->shouldReceive('call')
                  ->once()
                  ->with('migrate', [
                      '--database' => 'tenant',
-                     '--path'     => database_path('migrations/tenant'),
+                     '--path'     => $expectedPath,
+                     '--realpath' => true, 
                      '--force'    => true,
                  ]);
         });

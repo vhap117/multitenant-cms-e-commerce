@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use VHAP\Core\Models\Tenant;
 use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
 use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
+use VHAP\Core\Actions\Pipes\Provision\SeedTenantDefaultData;
 use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use Throwable;
 
@@ -38,6 +39,7 @@ class ProvisionNewTenantAction
                     ->through([
                         CreateTenantDatabase::class,
                         RunTenantMigrations::class,
+                        SeedTenantDefaultData::class,
                         SetupTenantAdmin::class,
                     ])
                     ->then(function (Tenant $provisionedTenant) {

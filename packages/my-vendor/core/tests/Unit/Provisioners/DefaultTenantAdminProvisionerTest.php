@@ -37,6 +37,9 @@ class DefaultTenantAdminProvisionerTest extends TestCase
      */
     protected function migrateSpatiePermissions(): void
     {
+        // Disable the physical DB connection purger so our in-memory SQLite tables survive makeCurrent()
+        config(['multitenancy.switch_tenant_tasks' => []]);
+
         // 1. Tell Spatie's models to look at the tenant connection
         config(['permission.database_connection' => 'tenant']);
 
@@ -65,7 +68,8 @@ class DefaultTenantAdminProvisionerTest extends TestCase
         // 1. Arrange
         $tenant = Tenant::factory()->create([
             'name' => 'Acme Corp',
-            'domain' => 'acme.myapp.com'
+            'domain' => 'acme.myapp.com',
+            'database' => ':memory:', // <--- Added this to trick the Spatie task!
         ]); 
         $tenant->makeCurrent();
 

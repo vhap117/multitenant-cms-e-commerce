@@ -51,12 +51,25 @@ class TestCase extends OrchestraTestCase
         $app['config']->set('multitenancy.tenant_database_connection_name', 'tenant');
         $app['config']->set('multitenancy.landlord_database_connection_name', 'landlord');
 
+        // Required to dynamically switch the 'tenant' connection based on $tenant->database field
+        $app['config']->set('multitenancy.switch_tenant_tasks', [
+            \Spatie\Multitenancy\Tasks\SwitchTenantDatabaseTask::class,
+        ]);
+
         // Tell Spatie to use your custom package models
         $app['config']->set('permission.models.role', \VHAP\Core\Models\Role::class);
         $app['config']->set('permission.models.permission', \VHAP\Core\Models\Permission::class);
         
         // Ensure Spatie's overall DB connection is explicitly set
         $app['config']->set('permission.database_connection', 'tenant');
+
+        // Temporarily redefine the migrations path to point directly 
+        // to your raw package directory during the test execution!
+        $app['config']->set(
+            'core.tenant_migrations_path', 
+            realpath(__DIR__.'/../database/migrations/tenant')
+        );
+
     }
 
     protected function cleanUpTenantDatabases()

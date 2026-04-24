@@ -4,7 +4,8 @@ namespace VHAP\Core;
 
 use Illuminate\Support\ServiceProvider;
 use VHAP\Core\Contracts\TenantDatabaseCreator;
-
+use VHAP\Core\Contracts\TenantAdminProvisioner;
+use VHAP\Core\Provisioners\DefaultTenantAdminProvisioner;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -26,6 +27,7 @@ class CoreServiceProvider extends ServiceProvider
             ], config('auth.providers.landlord_users', [])),
         ]);
 
+        // Bind the Database Creator strategy
         $this->app->bind(TenantDatabaseCreator::class, function ($app) {
             $driver = config('database.connections.tenant.driver');
 
@@ -35,6 +37,9 @@ class CoreServiceProvider extends ServiceProvider
 
             return new \VHAP\Core\Database\MysqlDatabaseCreator();
         });
+
+        // Bind the Admin Provisioner Contract to its default implementation
+        $this->app->bind(TenantAdminProvisioner::class, DefaultTenantAdminProvisioner::class);
     }
 
     /**

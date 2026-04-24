@@ -6,6 +6,7 @@ use VHAP\Core\Tests\TestCase;
 use VHAP\Core\Actions\ProvisionNewTenantAction;
 use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
 use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
+use VHAP\Core\Actions\Pipes\Provision\SeedTenantDefaultData;
 use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use VHAP\Core\Models\Tenant;
 use Illuminate\Support\Facades\File;
@@ -39,6 +40,7 @@ class ProvisionNewTenantActionTest extends TestCase
         // 1. Arrange - Use native anonymous classes instead of Mockery
         $this->bindFakePipe(CreateTenantDatabase::class);
         $this->bindFakePipe(RunTenantMigrations::class);
+        $this->bindFakePipe(SeedTenantDefaultData::class);
         $this->bindFakePipe(SetupTenantAdmin::class);
 
         $action = new ProvisionNewTenantAction();

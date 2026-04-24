@@ -17,9 +17,9 @@ class TerminateTenantSessionsTest extends TestCase
         $tenant->shouldReceive('makeCurrent')->once();
         $tenant->shouldReceive('forgetCurrent')->once();
 
-        // Mock DB connection, table, and truncate calls
+        // Mock DB connection, table, and delete calls
         $builderMock = Mockery::mock();
-        $builderMock->shouldReceive('truncate')
+        $builderMock->shouldReceive('delete')
             ->once()
             ->andReturn(true);
 

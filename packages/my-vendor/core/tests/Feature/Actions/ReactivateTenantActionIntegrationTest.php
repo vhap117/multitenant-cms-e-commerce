@@ -4,15 +4,14 @@ namespace VHAP\Core\Tests\Feature\Actions;
 
 use RuntimeException;
 use VHAP\Core\Tests\TestCase;
-use VHAP\Core\Actions\SuspendTenantAction;
-use VHAP\Core\Actions\Pipes\Suspension\DispatchSuspensionNotification;
+use VHAP\Core\Actions\ReactivateTenantAction;
+use VHAP\Core\Actions\Pipes\Reactivation\DispatchReactivationEmail;
 use VHAP\Core\Models\Tenant;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 
-class SuspendTenantActionIntegrationTest extends TestCase
+class ReactivateTenantActionIntegrationTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -30,7 +29,7 @@ class SuspendTenantActionIntegrationTest extends TestCase
         ])->run();
 
         // 2. Setup a physical SQLite file for the tenant integration test
-        $dbPath = __DIR__.'/dummy_tenant_suspension.sqlite';
+        $dbPath = __DIR__.'/dummy_tenant_reactivation.sqlite';
         if (!File::exists($dbPath)) {
             File::put($dbPath, '');
         }
@@ -41,7 +40,9 @@ class SuspendTenantActionIntegrationTest extends TestCase
             'database' => $dbPath,
         ]]);
 
-        // 4. Migrate the physical tenant DB so the "sessions" table exists
+        // 4. Migrate the physical tenant DB. Even though Reactivation doesn't strictly 
+        // run physical queries against tenant tables like Suspend does, doing this 
+        // ensures our Spatie cache flushing doesn't encounter weird anomalies!
         $this->artisan('migrate', [
             '--database' => 'tenant', 
             '--path' => __DIR__.'/../../../database/migrations/tenant', 
@@ -51,7 +52,7 @@ class SuspendTenantActionIntegrationTest extends TestCase
 
     protected function tearDown(): void
     {
-        $dbPath = __DIR__.'/dummy_tenant_suspension.sqlite';
+        $dbPath = __DIR__.'/dummy_tenant_reactivation.sqlite';
         if (File::exists($dbPath)) {
             File::delete($dbPath);
         }
@@ -59,93 +60,78 @@ class SuspendTenantActionIntegrationTest extends TestCase
     }
 
     #[Test]
-    public function it_suspends_the_tenant_environment_end_to_end_and_truncates_sessions()
+    public function it_reactivates_the_tenant_environment_end_to_end()
     {
-        // 1. Arrange: Create a real active tenant in the DB
+        // 1. Arrange: Create a real suspended tenant in the DB
         $tenant = Tenant::forceCreate([
-            'name'      => 'Active Store',
-            'domain'    => 'active.myapp.com',
-            'database'  => __DIR__.'/dummy_tenant_suspension.sqlite',
-            'is_active' => true,
+            'name'      => 'Suspended Store',
+            'domain'    => 'suspended.myapp.com',
+            'database'  => __DIR__.'/dummy_tenant_reactivation.sqlite',
+            'is_active' => false,
         ]);
 
-        // Manually push a fake active session into the memory database 
-        $tenant->makeCurrent();
-        DB::connection('tenant')->table('sessions')->insert([
-            'id' => 'dummy_session_123',
-            'payload' => 'some_encoded_payload_data',
-            'last_activity' => time()
-        ]);
-
-        // Confirm the session is actively sitting in the database
-        $this->assertEquals(1, DB::connection('tenant')->table('sessions')->count());
-
-        $action = new SuspendTenantAction();
+        $action = new ReactivateTenantAction();
 
         // We expect the success log to be executed
         Log::shouldReceive('info')
             ->once()
-            ->with("Tenant active.myapp.com has been successfully suspended.");
+            ->with("Tenant suspended.myapp.com has been successfully reactivated.");
 
-        // 2. Act: Run the real pipes across the real database
+        // 2. Act: Run the real pipes 
         $action->execute($tenant);
 
         // 3. Assertions
-        // A. Assert the database correctly flipped the tenant state
+        // Assert the landlord database successfully flipped the tenant state back to active
         $this->assertDatabaseHas('tenants', [
             'id'        => $tenant->id,
-            'is_active' => false,
+            'is_active' => true, // Thanks to our previous fix, this shouldn't silently fail anymore!
         ], 'landlord');
-
-        // B. Because 'TerminateTenantSessions' ran, the sessions table should be absolutely empty
-        $tenant->makeCurrent(); // <-- Add this line to log the Test back into the DB!
-        $this->assertEquals(0, DB::connection('tenant')->table('sessions')->count());
     }
 
     #[Test]
-    public function it_logs_error_and_throws_exception_if_suspension_fails()
+    public function it_logs_error_and_throws_exception_if_reactivation_fails()
     {
         // 1. Arrange
         $tenant = Tenant::forceCreate([
-            'name'      => 'Broken Store',
+            'name'      => 'Broken Reactivation Store',
             'domain'    => 'broken.myapp.com',
-            'database'  => __DIR__.'/dummy_tenant_suspension.sqlite',
-            'is_active' => true,
+            'database'  => __DIR__.'/dummy_tenant_reactivation.sqlite',
+            'is_active' => false,
         ]);
 
-        // We bind a fake pipe strictly for the LAST step (DispatchSuspensionNotification) 
+        // We bind a fake pipe strictly for the LAST step (DispatchReactivationEmail) 
         // to intentionally force a mid-flight crash after previous pipes fired.
-        $this->app->bind(DispatchSuspensionNotification::class, function () {
+        $this->app->bind(DispatchReactivationEmail::class, function () {
             return new class {
                 public function handle($tenant, $next) {
-                    throw new RuntimeException('Notification pushing service offline!');
+                    throw new RuntimeException('Email dispatching service offline!');
                 }
             };
         });
 
-        $action = new SuspendTenantAction();
+        $action = new ReactivateTenantAction();
         
         // Because of the crash, the action's catch block should log an error Payload
         Log::shouldReceive('error')
             ->once()
-            ->with('Tenant suspension pipeline failed.', [
+            ->with('Tenant reactivation pipeline failed.', [
                 'tenant_id' => $tenant->id,
                 'domain'    => 'broken.myapp.com',
-                'error'     => 'Notification pushing service offline!',
+                'error'     => 'Email dispatching service offline!',
             ]);
 
         // 2. Act & Assert Expectation
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Notification pushing service offline!');
+        $this->expectExceptionMessage('Email dispatching service offline!');
 
         try {
             $action->execute($tenant);
         } finally {
             // Assert that the transaction perfectly rolled back! 
-            // The landlord database should still see the tenant as ACTIVE since the pipeline failed.
+            // The landlord database should still see the tenant as SUSPENDED since the pipeline failed.
             $this->assertDatabaseHas('tenants', [
                 'id' => $tenant->id,
-                'is_active' => true,
+                'is_active' => false,
             ], 'landlord');
         }
     }

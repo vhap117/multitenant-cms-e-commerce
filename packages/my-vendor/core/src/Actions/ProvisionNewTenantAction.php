@@ -10,7 +10,6 @@ use VHAP\Core\Models\Tenant;
 use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
 use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
 use VHAP\Core\Actions\Pipes\Provision\SeedTenantDefaultData;
-use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use Throwable;
 
 class ProvisionNewTenantAction
@@ -40,12 +39,12 @@ class ProvisionNewTenantAction
                         CreateTenantDatabase::class,
                         RunTenantMigrations::class,
                         SeedTenantDefaultData::class,
-                        SetupTenantAdmin::class,
                     ])
-                    ->then(function (Tenant $provisionedTenant) {
+                    ->then(function (Tenant $provisionedTenant) use ($tenantData) {
                         // This closure only executes if all pipes pass successfully.
-                        // You can dispatch a success event here if needed.
-                        // event(new TenantProvisioned($provisionedTenant));
+                        event(new \VHAP\Core\Events\TenantProvisioned($provisionedTenant, $tenantData));
+
+                        $provisionedTenant->forgetCurrent();
                         
                         return $provisionedTenant;
                     });

@@ -7,8 +7,9 @@ use VHAP\Core\Actions\ProvisionNewTenantAction;
 use VHAP\Core\Actions\Pipes\Provision\CreateTenantDatabase;
 use VHAP\Core\Actions\Pipes\Provision\RunTenantMigrations;
 use VHAP\Core\Actions\Pipes\Provision\SeedTenantDefaultData;
-use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
 use VHAP\Core\Models\Tenant;
+use VHAP\Core\Events\TenantProvisioned;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Exception;
@@ -41,13 +42,16 @@ class ProvisionNewTenantActionTest extends TestCase
         $this->bindFakePipe(CreateTenantDatabase::class);
         $this->bindFakePipe(RunTenantMigrations::class);
         $this->bindFakePipe(SeedTenantDefaultData::class);
-        $this->bindFakePipe(SetupTenantAdmin::class);
+        
+        Event::fake();
 
         $action = new ProvisionNewTenantAction();
         $tenantData = [
             'name' => 'Acme Corp',
             'domain' => 'acme.myapp.com',
             'database' => 'tenant_acme_db',
+            'email' => 'admin@acme.myapp.com',
+            'password' => 'secret123',
         ];
 
         // 2. Act
@@ -61,6 +65,10 @@ class ProvisionNewTenantActionTest extends TestCase
             'domain' => 'acme.myapp.com',
             'database' => 'tenant_acme_db',
         ], 'landlord');
+
+        Event::assertDispatched(TenantProvisioned::class, function ($event) use ($tenant, $tenantData) {
+            return $event->tenant->id === $tenant->id && $event->adminData === $tenantData;
+        });
     }
 
     #[Test]
@@ -89,8 +97,10 @@ class ProvisionNewTenantActionTest extends TestCase
             };
         });
 
+        Event::fake();
+
         // The third pipe should never be reached. If it is, this forces a failure.
-        $this->app->bind(SetupTenantAdmin::class, function () {
+        $this->app->bind(SeedTenantDefaultData::class, function () {
             return new class {
                 public function handle($tenant, $next) {
                     throw new Exception('Pipeline did not halt! This pipe should not have executed.');
@@ -103,6 +113,8 @@ class ProvisionNewTenantActionTest extends TestCase
             'name' => 'Bad Tenant',
             'domain' => 'bad.myapp.com',
             'database' => $dummyDbPath,
+            'email' => 'admin@bad.myapp.com',
+            'password' => 'secret123',
         ];
 
         // 2. Act & Assert
@@ -119,6 +131,8 @@ class ProvisionNewTenantActionTest extends TestCase
             'domain' => 'bad.myapp.com',
         ], 'landlord');
 
+        Event::assertNotDispatched(TenantProvisioned::class);
+        
         // Note: We no longer need to assert File::exists() because the 
         // File::shouldReceive()->once() mock at the top of the test already 
         // guarantees the deletion logic was triggered successfully.

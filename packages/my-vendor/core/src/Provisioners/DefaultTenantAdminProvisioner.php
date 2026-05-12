@@ -3,25 +3,17 @@
 namespace VHAP\Core\Provisioners;
 
 use VHAP\Core\Contracts\TenantAdminProvisioner;
-use VHAP\Core\Models\Tenant;
 use VHAP\Core\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DefaultTenantAdminProvisioner implements TenantAdminProvisioner
 {
-    public function provision(Tenant $tenant): void
+    public function provision(array $userData): void
     {
-        // 1. Generate or retrieve the initial user data.
-        // Because the interface signature only passes the Tenant model, 
-        // you might generate default credentials here or pull from a request/config.
-        $defaultPassword = Str::random(16);
-        
-        // 2. Create the User (Automatically scopes to the tenant DB)
         $user = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@' . $tenant->domain,
-            'password' => Hash::make($defaultPassword),
+            'name' => $userData['name'],
+            'email' => $userData['email'],
+            'password' => Hash::make($userData['password']),
         ]);
 
         // 3. Assign the Spatie Role 

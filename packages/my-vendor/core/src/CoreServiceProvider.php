@@ -42,11 +42,18 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(TenantAdminProvisioner::class, DefaultTenantAdminProvisioner::class);
     }
 
-    /**
-     * Bootstrap any package services.
-     */
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Event::listen(
+            \VHAP\Core\Events\TenantProvisioned::class,
+            \VHAP\Core\Listeners\ProvisionTenantAdminListener::class,
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \Spatie\Multitenancy\Events\MadeTenantCurrentEvent::class,
+            \VHAP\Core\Listeners\ConfigureTenantUrlListener::class,
+        );
+
         // 1. Load Landlord Migrations
         // These run automatically when you run `php artisan migrate` in the main app.
         // This is where your 'tenants' table and 'domains' table will live.

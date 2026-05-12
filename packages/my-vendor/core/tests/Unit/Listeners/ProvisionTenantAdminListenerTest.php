@@ -1,27 +1,30 @@
 <?php
 
-namespace VHAP\Core\Tests\Unit\Provisioners;
+namespace VHAP\Core\Tests\Unit\Listeners;
 
+use Mockery;
 use VHAP\Core\Tests\TestCase;
-use VHAP\Core\Provisioners\DefaultTenantAdminProvisioner;
+use VHAP\Core\Listeners\ProvisionTenantAdminListener;
+use VHAP\Core\Events\TenantProvisioned;
 use VHAP\Core\Models\Tenant;
 use VHAP\Core\Models\User;
-use Spatie\Permission\Models\Role;
+use VHAP\Core\Contracts\TenantAdminProvisioner;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Auth\Events\Registered;
 
-class DefaultTenantAdminProvisionerTest extends TestCase
+class ProvisionTenantAdminListenerTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
         
-        // 1. Configure the active tenant connection as an in-memory SQLite DB
+        // Let's actually use an in-memory database to test the Eloquent query naturally.
         config(['database.connections.tenant' => [
             'driver'   => 'sqlite',
             'database' => ':memory:',
             'prefix'   => '',
         ]]);
 
-        // 2. Run your package's custom tenant migrations (like the users table)
         $this->artisan('migrate', [
             '--database' => 'tenant', 
             '--path'     => __DIR__.'/../../../database/migrations/tenant',
@@ -62,40 +65,45 @@ class DefaultTenantAdminProvisionerTest extends TestCase
         config(['database.default' => $originalConnection]);
     }
 
-    /** @test */
-    public function it_provisions_a_super_admin_with_generated_credentials()
+    public function test_it_switches_connection_provisions_admin_and_fires_registered_event()
     {
-        // 1. Arrange
-        $tenant = Tenant::factory()->create([
-            'name' => 'Acme Corp',
-            'domain' => 'acme.myapp.com',
-            'database' => ':memory:', // <--- Added this to trick the Spatie task!
-        ]); 
-        $tenant->makeCurrent();
+        // Arrange
+        Event::fake();
+        
+        // We use Mockery::mock() but make it partial so it behaves 
+        // like a real model, but allows us to assert makeCurrent() was fired
+        $tenant = Mockery::mock(Tenant::class)->makePartial();
+        $tenant->shouldReceive('makeCurrent')->once();
+        $tenant->shouldReceive('forgetCurrent')->once();
 
-        // Since the Spatie tables now exist in SQLite memory, we can create the role
-        Role::on('tenant')->create(['name' => 'Super Admin', 'guard_name' => 'web']);
-
-        $provisioner = new DefaultTenantAdminProvisioner();
-
-        // 2. Act
-        $provisioner->provision([
+        $adminData = [
             'name' => 'System Admin',
-            'email' => 'admin@acme.myapp.com',
+            'email' => 'admin@test.com',
             'password' => 'secret',
-        ]);
+        ];
 
-        // 3. Assert
-        $this->assertDatabaseHas('users', [
-            'name' => 'System Admin',
-            'email' => 'admin@acme.myapp.com',
-        ], 'tenant'); 
+        // Mock the Provisioner contract
+        $mockProvisioner = Mockery::mock(TenantAdminProvisioner::class);
+        $mockProvisioner->shouldReceive('provision')
+            ->once()
+            ->with($adminData)
+            ->andReturnUsing(function () {
+                User::create([
+                    'name' => 'System Admin',
+                    'email' => 'admin@test.com',
+                    'password' => 'secret',
+                ]);
+            });
 
-        $user = User::on('tenant')->where('email', 'admin@acme.myapp.com')->first();
-        
-        $this->assertTrue($user->hasRole('Super Admin'));
-        
-        // Cleanup
-        $tenant->forgetCurrent();
+        $event = new TenantProvisioned($tenant, $adminData);
+        $listener = new ProvisionTenantAdminListener($mockProvisioner);
+
+        // Act
+        $listener->handle($event);
+
+        // Assert
+        Event::assertDispatched(Registered::class, function ($event) {
+            return $event->user->email === 'admin@test.com';
+        });
     }
 }

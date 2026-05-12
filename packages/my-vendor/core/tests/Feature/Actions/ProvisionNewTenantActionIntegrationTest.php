@@ -5,7 +5,7 @@ namespace VHAP\Core\Tests\Feature\Actions;
 use RuntimeException;
 use VHAP\Core\Tests\TestCase;
 use VHAP\Core\Actions\ProvisionNewTenantAction;
-use VHAP\Core\Actions\Pipes\Provision\SetupTenantAdmin;
+use VHAP\Core\Actions\Pipes\Provision\SeedTenantDefaultData;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
@@ -63,6 +63,8 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
             'name'     => 'Integration Store',
             'domain'   => 'integration.myapp.com',
             'database' => $databaseFilename,
+            'email'    => 'admin@integration.myapp.com',
+            'password' => 'secret123',
         ];
 
         // 2. Act: We run the Action exactly as a Controller would 
@@ -104,9 +106,9 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
             File::delete($databaseFilename);
         }
 
-        // We bind a fake pipe strictly for the LAST step (SetupTenantAdmin) so that
+        // We bind a fake pipe strictly for the LAST step (SeedTenantDefaultData) so that
         // the physical database is definitely created and migrated, but then the pipeline crashes.
-        $this->app->bind(SetupTenantAdmin::class, function () {
+        $this->app->bind(SeedTenantDefaultData::class, function () {
             return new class {
                 public function handle($tenant, $next) {
                     throw new RuntimeException('Admin seeding failed unexpectedly.');
@@ -119,6 +121,8 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
             'name'     => 'Bad Integration Store',
             'domain'   => 'bad-integration.myapp.com',
             'database' => $databaseFilename,
+            'email'    => 'admin@bad-integration.myapp.com',
+            'password' => 'secret123',
         ];
 
         // 2. Act & Assert Expectation

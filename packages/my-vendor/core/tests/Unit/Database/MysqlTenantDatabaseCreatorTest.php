@@ -4,11 +4,11 @@ namespace VHAP\Core\Tests\Unit\Database;
 
 use Illuminate\Support\Facades\DB;
 use VHAP\Core\Models\Tenant;
-use VHAP\Core\Database\MysqlDatabaseCreator;
+use VHAP\Core\Database\MysqlTenantDatabaseCreator;
 use VHAP\Core\Tests\TestCase;
 use Mockery;
 
-class MysqlDatabaseCreatorTest extends TestCase
+class MysqlTenantDatabaseCreatorTest extends TestCase
 {
     public function test_it_executes_create_database_statement_on_landlord_connection()
     {
@@ -16,7 +16,7 @@ class MysqlDatabaseCreatorTest extends TestCase
         $tenant = new Tenant();
         $tenant->database = 'test_tenant_db';
         
-        $creator = new MysqlDatabaseCreator();
+        $creator = new MysqlTenantDatabaseCreator();
 
         // We use Mockery on the DB facade to intercept the SQL call
         // This validates the logic WITHOUT requiring a live MySQL server during tests

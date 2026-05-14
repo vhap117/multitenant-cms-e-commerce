@@ -6,7 +6,7 @@ use VHAP\Core\Contracts\TenantDatabaseCreator;
 use Spatie\Multitenancy\Models\Tenant;
 use Illuminate\Support\Facades\File;
 
-class SqliteDatabaseCreator implements TenantDatabaseCreator
+class SqliteTenantDatabaseCreator implements TenantDatabaseCreator
 {
     public function create(Tenant $tenant): void
     {

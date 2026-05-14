@@ -6,7 +6,7 @@ use VHAP\Core\Contracts\TenantDatabaseCreator;
 use VHAP\Core\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 
-class MysqlDatabaseCreator implements TenantDatabaseCreator
+class MysqlTenantDatabaseCreator implements TenantDatabaseCreator
 {
     public function create(Tenant $tenant): void
     {

@@ -31,6 +31,8 @@ class TestCase extends OrchestraTestCase
 
     protected function getEnvironmentSetUp($app)
     {
+        // Prevent Spatie from triggering database queries for cache clearing during tests
+        $app['config']->set('cache.default', 'array');
         // 1. Setup the Landlord connection (in-memory)
         $app['config']->set('database.connections.landlord', [
             'driver'   => 'sqlite',
@@ -38,10 +40,9 @@ class TestCase extends OrchestraTestCase
             'prefix'   => '',
         ]);
 
-        // 2. Setup the empty Tenant connection template
         $app['config']->set('database.connections.tenant', [
             'driver'   => 'sqlite',
-            'database' => null, // This gets populated dynamically
+            'database' => ':memory:', // Temporarily set to memory instead of null to catch stack traces
             'prefix'   => '',
         ]);
 

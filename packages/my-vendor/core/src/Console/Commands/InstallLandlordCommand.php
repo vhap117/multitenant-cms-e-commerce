@@ -3,8 +3,6 @@
 namespace VHAP\Core\Console\Commands;
 
 use Illuminate\Console\Command;
-use VHAP\Core\Models\LandlordUser;
-use Illuminate\Support\Facades\Hash;
 
 class InstallLandlordCommand extends Command
 {
@@ -25,11 +23,12 @@ class InstallLandlordCommand extends Command
     /**
      * Execute the console command.
      *
+     * @param \VHAP\Core\Actions\InstallLandlordAction $action
      * @return int
      */
-    public function handle()
+    public function handle(\VHAP\Core\Actions\InstallLandlordAction $action)
     {
-        $this->info('Starting Landlord Setup...');
+        $this->info('Starting Landlord Setup Pipeline...');
 
         $name = $this->ask('Super Admin Name', 'System Admin');
         $email = $this->ask('Super Admin Email', 'admin@landlord.local');
@@ -41,20 +40,25 @@ class InstallLandlordCommand extends Command
             $this->warn("Make sure to save this password securely!");
         }
 
-        $user = LandlordUser::firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => $name,
-                'password' => Hash::make($password),
-            ]
-        );
+        $payload = [
+            'database' => config('database.connections.landlord.database'),
+            'name'     => $name,
+            'email'    => $email,
+            'password' => $password,
+        ];
 
-        if ($user->wasRecentlyCreated) {
-            $this->info('Super Admin user created successfully.');
-        } else {
-            $this->info('A user with this email already exists.');
+        try {
+            $this->info('Running Landlord Database Creation, Migrations, and Admin Provisioning...');
+            
+            $action->execute($payload);
+            
+            $this->info('Landlord Environment successfully installed and provisioned!');
+            
+            return Command::SUCCESS;
+        } catch (\Throwable $e) {
+            $this->error('Landlord Setup failed: ' . $e->getMessage());
+            
+            return Command::FAILURE;
         }
-
-        return Command::SUCCESS;
     }
 }

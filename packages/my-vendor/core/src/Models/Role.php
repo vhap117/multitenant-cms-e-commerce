@@ -7,8 +7,12 @@ use Spatie\Permission\Models\Role as SpatieRole;
 class Role extends SpatieRole
 {
     /**
-     * Force Spatie's Role model to ALWAYS use the tenant connection.
-     * @var string
+     * Dynamically resolve the connection based on Spatie's configuration, 
+     * allowing this model to be used in both Tenant and Landlord environments.
      */
-    protected $connection = 'tenant';
+    public function getConnectionName()
+    {
+        return config('permission.database_connection') ?: config('database.default');
+    }
+
 }

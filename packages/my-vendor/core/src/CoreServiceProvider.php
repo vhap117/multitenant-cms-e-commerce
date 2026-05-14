@@ -32,14 +32,28 @@ class CoreServiceProvider extends ServiceProvider
             $driver = config('database.connections.tenant.driver');
 
             if ($driver === 'sqlite') {
-                return new \VHAP\Core\Database\SqliteDatabaseCreator();
+                return new \VHAP\Core\Database\SqliteTenantDatabaseCreator();
             }
 
-            return new \VHAP\Core\Database\MysqlDatabaseCreator();
+            return new \VHAP\Core\Database\MysqlTenantDatabaseCreator();
+        });
+
+        // Bind the Landlord Database Creator strategy
+        $this->app->bind(\VHAP\Core\Contracts\LandlordDatabaseCreator::class, function ($app) {
+            $driver = config('database.connections.landlord.driver', config('database.default'));
+
+            if ($driver === 'sqlite') {
+                return new \VHAP\Core\Database\SqliteLandlordDatabaseCreator();
+            }
+
+            return new \VHAP\Core\Database\MysqlLandlordDatabaseCreator();
         });
 
         // Bind the Admin Provisioner Contract to its default implementation
         $this->app->bind(TenantAdminProvisioner::class, DefaultTenantAdminProvisioner::class);
+
+        // Bind the Landlord Admin Provisioner Contract to its default implementation
+        $this->app->bind(\VHAP\Core\Contracts\LandlordAdminProvisioner::class, \VHAP\Core\Provisioners\DefaultLandlordAdminProvisioner::class);
     }
 
     public function boot(): void

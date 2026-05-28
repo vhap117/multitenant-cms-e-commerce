@@ -3,7 +3,7 @@
 namespace VHAP\Core\Actions\Pipes\LandlordSetup;
 
 use Closure;
-use Spatie\Permission\Models\Role;
+use VHAP\Core\Models\Role;
 
 class SeedLandlordDefaultData
 {

@@ -5,10 +5,11 @@ namespace VHAP\Core\Models;
 use Spatie\Multitenancy\Models\Tenant as SpatieTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use VHAP\Core\Database\Factories\TenantFactory;
+use Laravel\Cashier\Billable;
 
 class Tenant extends SpatieTenant
 {
-    use HasFactory;
+    use HasFactory, Billable;
 
     /**
      * Force this model to ALWAYS use the landlord database connection.

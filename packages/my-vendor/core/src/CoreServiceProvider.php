@@ -68,6 +68,11 @@ class CoreServiceProvider extends ServiceProvider
             \VHAP\Core\Listeners\ConfigureTenantUrlListener::class,
         );
 
+        \Illuminate\Support\Facades\Event::listen(
+            \Laravel\Cashier\Events\WebhookReceived::class,
+            \VHAP\Core\Listeners\StripeWebhookListener::class,
+        );
+
         // 1. Load Landlord Migrations
         // These run automatically when you run `php artisan migrate` in the main app.
         // This is where your 'tenants' table and 'domains' table will live.

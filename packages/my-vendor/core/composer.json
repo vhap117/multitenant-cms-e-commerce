@@ -7,7 +7,8 @@
         "illuminate/support": "^13.0",
         "illuminate/database": "^13.0",
         "spatie/laravel-multitenancy": "*",
-        "spatie/laravel-permission": "*"
+        "spatie/laravel-permission": "*",
+        "laravel/cashier": "^15.0"
     },
     "require-dev": {
         "orchestra/testbench": "*",

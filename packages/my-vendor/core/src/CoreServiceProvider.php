@@ -27,6 +27,34 @@ class CoreServiceProvider extends ServiceProvider
             ], config('auth.providers.landlord_users', [])),
         ]);
 
+        // Inject Spatie Multitenancy configuration dynamically
+        config([
+            'multitenancy.tenant_database_connection_name' => 'tenant',
+            'multitenancy.landlord_database_connection_name' => 'landlord',
+            'multitenancy.switch_tenant_tasks' => [
+                \Spatie\Multitenancy\Tasks\SwitchTenantDatabaseTask::class,
+            ],
+        ]);
+
+        // Dynamically inject Landlord and Tenant database connections
+        // using the host's default connection as a base, but allowing
+        // the host app's database.php to completely override these if defined.
+        $defaultConnection = config('database.default');
+        $defaultConfig = config("database.connections.{$defaultConnection}", []);
+
+        config([
+            'database.connections.landlord' => array_merge(
+                $defaultConfig,
+                ['database' => env('DB_LANDLORD_DATABASE', 'monorepo')],
+                config('database.connections.landlord', [])
+            ),
+            'database.connections.tenant' => array_merge(
+                $defaultConfig,
+                ['database' => null], // Spatie will dynamically override this
+                config('database.connections.tenant', [])
+            ),
+        ]);
+
         // Bind the Database Creator strategy
         $this->app->bind(TenantDatabaseCreator::class, function ($app) {
             $driver = config('database.connections.tenant.driver');
@@ -54,6 +82,7 @@ class CoreServiceProvider extends ServiceProvider
 
         // Bind the Landlord Admin Provisioner Contract to its default implementation
         $this->app->bind(\VHAP\Core\Contracts\LandlordAdminProvisioner::class, \VHAP\Core\Provisioners\DefaultLandlordAdminProvisioner::class);
+        
     }
 
     public function boot(): void

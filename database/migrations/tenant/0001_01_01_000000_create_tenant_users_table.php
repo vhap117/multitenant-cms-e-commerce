@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
+     * Force this migration to ALWAYS run on the tenant connection.
+     * @var string
+     */
+    protected $connection = 'tenant';
+    /**
      * Run the migrations.
      */
     public function up(): void

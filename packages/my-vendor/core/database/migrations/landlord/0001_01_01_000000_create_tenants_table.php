@@ -25,6 +25,8 @@ return new class extends Migration
             // Optional: You can add an 'is_active' or 'suspended_at' column here 
             // to handle your "Suspend Tenant" use case from earlier.
             $table->boolean('is_active')->default(true);
+
+            $table->softDeletes();
             
             $table->timestamps();
         });

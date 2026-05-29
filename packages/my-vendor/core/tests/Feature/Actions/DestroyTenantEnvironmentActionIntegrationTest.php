@@ -85,8 +85,8 @@ class DestroyTenantEnvironmentActionIntegrationTest extends TestCase
         $this->assertFalse(Storage::disk('local')->exists("tenants/{$tenant->id}/private_file.txt"));
         $this->assertFalse(Storage::disk('public')->exists("tenants/{$tenant->id}/public_logo.png"));
 
-        // C. Assert the tenant record was successfully stripped from the landlord DB connection
-        $this->assertDatabaseMissing('tenants', [
+        // C. Assert the tenant record was successfully soft-deleted from the landlord DB connection
+        $this->assertSoftDeleted('tenants', [
             'id' => $tenant->id,
         ], 'landlord');
     }

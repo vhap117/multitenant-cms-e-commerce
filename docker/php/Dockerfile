@@ -16,9 +16,10 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libexif-dev \
+    libicu-dev \
     && docker-php-ext-configure exif \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

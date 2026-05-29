@@ -15,10 +15,11 @@ RUN apt-get update && apt-get install -y \
   libjpeg62-turbo-dev \
   libfreetype6-dev \
   libexif-dev \
+  libicu-dev \
   build-essential \
   gnupg \
   && docker-php-ext-configure exif \
-  && docker-php-ext-install pdo_mysql pcntl bcmath exif \
+  && docker-php-ext-install pdo_mysql pcntl bcmath exif zip intl \
   && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
   && apt-get install -y nodejs \
   && npm install --global yarn pnpm \

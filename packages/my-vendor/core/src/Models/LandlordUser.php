@@ -18,6 +18,8 @@ class LandlordUser extends Authenticatable
 
     protected $table = 'landlord_users';
 
+    protected $guard_name = 'landlord';
+
     protected $fillable = [
         'name',
         'email',

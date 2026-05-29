@@ -67,6 +67,11 @@ return [
             'model' => env('AUTH_MODEL', User::class),
         ],
 
+        'landlord_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\LandlordUser::class,
+        ],
+
         // 'users' => [
         //     'driver' => 'database',
         //     'table' => 'users',

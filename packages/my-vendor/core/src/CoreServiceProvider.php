@@ -82,7 +82,12 @@ class CoreServiceProvider extends ServiceProvider
 
         // Bind the Landlord Admin Provisioner Contract to its default implementation
         $this->app->bind(\VHAP\Core\Contracts\LandlordAdminProvisioner::class, \VHAP\Core\Provisioners\DefaultLandlordAdminProvisioner::class);
-        
+
+        // Bind the Billing Provider interface to the Cashier Adapter implementation
+        $this->app->bind(
+            \VHAP\Core\Contracts\BillingProvider::class,
+            \VHAP\Core\Services\Billing\CashierAdapter::class
+        );
     }
 
     public function boot(): void

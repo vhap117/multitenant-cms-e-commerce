@@ -28,6 +28,8 @@ class TenantFactory extends Factory
 
         return [
             'name' => $company,
+            'email' => $this->faker->unique()->safeEmail(),
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain' => $slug . '.myapp.com',
             'database' => 'tenant_' . str_replace('-', '_', $slug),
         ];

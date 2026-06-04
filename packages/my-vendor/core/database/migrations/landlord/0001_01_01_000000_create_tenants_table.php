@@ -19,12 +19,14 @@ return new class extends Migration
         Schema::create('tenants', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('email');
+            $table->string('plan');
             $table->string('domain')->unique()->index();
             $table->string('database')->unique();
             
             // Optional: You can add an 'is_active' or 'suspended_at' column here 
             // to handle your "Suspend Tenant" use case from earlier.
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(false);
 
             $table->softDeletes();
             

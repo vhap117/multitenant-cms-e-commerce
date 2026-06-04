@@ -65,6 +65,8 @@ class ReactivateTenantActionIntegrationTest extends TestCase
         // 1. Arrange: Create a real suspended tenant in the DB
         $tenant = Tenant::forceCreate([
             'name'      => 'Suspended Store',
+            'email'     => 'admin@suspended.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'suspended.myapp.com',
             'database'  => __DIR__.'/dummy_tenant_reactivation.sqlite',
             'is_active' => false,
@@ -94,6 +96,8 @@ class ReactivateTenantActionIntegrationTest extends TestCase
         // 1. Arrange
         $tenant = Tenant::forceCreate([
             'name'      => 'Broken Reactivation Store',
+            'email'     => 'admin@broken.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'broken.myapp.com',
             'database'  => __DIR__.'/dummy_tenant_reactivation.sqlite',
             'is_active' => false,

@@ -14,6 +14,8 @@ class ValidateDomainAvailabilityTest extends TestCase
         // Arrange: Create a real test tenant in the in-memory SQLite database
         $tenant = Tenant::forceCreate([
             'name' => 'Store A',
+            'email' => 'admin@store-a.example.com',
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain' => 'store-a.example.com',
             'database' => 'tenant_1',
             'is_active' => true,
@@ -46,6 +48,8 @@ class ValidateDomainAvailabilityTest extends TestCase
         // Arrange
         $tenant = Tenant::forceCreate([
             'name' => 'Store A',
+            'email' => 'admin@store-a.example.com',
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain' => 'store-a.example.com',
             'database' => 'tenant_1',
             'is_active' => true,
@@ -76,6 +80,8 @@ class ValidateDomainAvailabilityTest extends TestCase
         // Arrange: Create two active tenants
         $tenantA = Tenant::forceCreate([
             'name' => 'Store A',
+            'email' => 'admin@taken-domain.example.com',
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain' => 'taken-domain.example.com',
             'database' => 'tenant_1',
             'is_active' => true,
@@ -83,6 +89,8 @@ class ValidateDomainAvailabilityTest extends TestCase
         
         $tenantB = Tenant::forceCreate([
             'name' => 'Store B',
+            'email' => 'admin@store-b.example.com',
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain' => 'store-b.example.com',
             'database' => 'tenant_2',
             'is_active' => true,

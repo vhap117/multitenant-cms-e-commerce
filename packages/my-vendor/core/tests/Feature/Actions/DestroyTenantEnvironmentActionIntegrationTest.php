@@ -57,6 +57,8 @@ class DestroyTenantEnvironmentActionIntegrationTest extends TestCase
 
         $tenant = Tenant::forceCreate([
             'name'      => 'Doomed Store',
+            'email'     => 'admin@doomed.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'doomed.myapp.com',
             'database'  => $dbPath,
             'is_active' => false, // Typically you'd suspend a tenant before destroying it
@@ -102,6 +104,8 @@ class DestroyTenantEnvironmentActionIntegrationTest extends TestCase
 
         $tenant = Tenant::forceCreate([
             'name'      => 'Partially Destroyed Store',
+            'email'     => 'admin@partial.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'partial.myapp.com',
             'database'  => $dbPath,
             'is_active' => false,

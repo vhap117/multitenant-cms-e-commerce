@@ -25,24 +25,12 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
         // 2. Ensure our tenant DB driver is configured explicitly to create SQLite files
         config(['database.connections.tenant.driver' => 'sqlite']);
 
-        // 3. Temporarily copy the Spatie stub directly into the package tenant directory 
-        // as a true PHP file so the Artisan migrator will naturally grab it mid-flight!
-        $spatieStub = __DIR__.'/../../../vendor/spatie/laravel-permission/database/migrations/create_permission_tables.php.stub';
-        $packageMigrationPath = __DIR__.'/../../../database/migrations/tenant/0002_02_02_000000_create_permission_tables.php';
-        
-        if (!File::exists($packageMigrationPath) && File::exists($spatieStub)) {
-            File::copy($spatieStub, $packageMigrationPath);
-        }
+        // Spatie stub is dynamically evaluated on-the-fly, no copy needed here.
     }
 
     protected function tearDown(): void
     {
-        $packageMigrationPath = __DIR__.'/../../../database/migrations/tenant/0002_02_02_000000_create_permission_tables.php';
-        
-        // Clean up the dynamically created migration file so it doesn't leak into git
-        if (File::exists($packageMigrationPath)) {
-            File::delete($packageMigrationPath);
-        }
+        // Clean up package default tests state
         
         parent::tearDown();
     }
@@ -77,6 +65,8 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
         $this->assertDatabaseHas('tenants', [
             'domain'   => 'integration.myapp.com',
             'database' => $databaseFilename,
+            'email'    => 'admin@integration.myapp.com',
+            'plan'     => \VHAP\Core\Enums\TenantPlan::FREE->value,
         ], 'landlord');
 
         // B. Did it physically create the database file?

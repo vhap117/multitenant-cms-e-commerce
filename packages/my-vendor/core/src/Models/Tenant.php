@@ -8,7 +8,10 @@ use VHAP\Core\Database\Factories\TenantFactory;
 use Laravel\Cashier\Billable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Tenant extends SpatieTenant
+use VHAP\Core\Contracts\BillableEntity;
+use VHAP\Core\Enums\TenantPlan;
+
+class Tenant extends SpatieTenant implements BillableEntity
 {
     use HasFactory, Billable, SoftDeletes;
 
@@ -25,10 +28,38 @@ class Tenant extends SpatieTenant
      */
     protected $fillable = [
         'name',
+        'email',
+        'plan',
         'domain',
         'database',
         'is_active',
     ];
+
+    /**
+     * Cast database attributes to local types/enums.
+     */
+    protected function casts(): array
+    {
+        return [
+            'plan' => TenantPlan::class,
+            'is_active' => 'boolean',
+        ];
+    }
+
+    /**
+     * Unified subscription check: Checks if the user is on the Free tier local plan,
+     * or delegates the query to Stripe Cashier if they are on a paid plan.
+     */
+    public function isSubscribed(string $subscriptionName = 'default'): bool
+    {
+        // 1. Free plan grants access natively without making Stripe API requests
+        if ($this->plan === TenantPlan::FREE) {
+            return true;
+        }
+
+        // 2. Otherwise, check Stripe subscriptions via Cashier
+        return $this->subscribed($subscriptionName);
+    }
 
     /**
      * Instruct Laravel to use your package's specific factory.
@@ -36,5 +67,31 @@ class Tenant extends SpatieTenant
     protected static function newFactory()
     {
         return TenantFactory::new();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BillableEntity Contract Implementation
+    |--------------------------------------------------------------------------
+    */
+
+    public function getEmailForBilling(): string
+    {
+        return $this->email;
+    }
+
+    public function getNameForBilling(): string
+    {
+        return $this->name;
+    }
+
+    public function getBillingIdentifier(): ?string
+    {
+        return $this->stripe_id;
+    }
+
+    public function updateBillingIdentifier(string $identifier): void
+    {
+        $this->update(['stripe_id' => $identifier]);
     }
 }

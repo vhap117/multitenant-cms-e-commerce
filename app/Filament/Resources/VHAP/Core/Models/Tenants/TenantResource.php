@@ -9,7 +9,6 @@ use App\Filament\Resources\VHAP\Core\Models\Tenants\Pages\ViewTenant;
 use App\Filament\Resources\VHAP\Core\Models\Tenants\Schemas\TenantForm;
 use App\Filament\Resources\VHAP\Core\Models\Tenants\Schemas\TenantInfolist;
 use App\Filament\Resources\VHAP\Core\Models\Tenants\Tables\TenantsTable;
-use App\Models\VHAP\Core\Models\Tenant;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use VHAP\Core\Models\Tenant;
 
 class TenantResource extends Resource
 {

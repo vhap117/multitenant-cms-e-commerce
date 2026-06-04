@@ -37,6 +37,8 @@ class UpdateTenantDomainActionIntegrationTest extends TestCase
         // 1. Arrange
         $tenant = Tenant::forceCreate([
             'name'      => 'Domain Update Store',
+            'email'     => 'admin@old.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'old.myapp.com',
             'database'  => 'old_db_schema',
         ]);
@@ -64,12 +66,16 @@ class UpdateTenantDomainActionIntegrationTest extends TestCase
         // 1. Arrange
         Tenant::forceCreate([
             'name'      => 'Competitor Store',
+            'email'     => 'admin@premium.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'premium.myapp.com',
             'database'  => 'competitor_db_schema',
         ]);
 
         $tenant = Tenant::forceCreate([
             'name'      => 'My Store',
+            'email'     => 'admin@my-store.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'my-store.myapp.com',
             'database'  => 'my_store_db_schema',
         ]);
@@ -98,6 +104,8 @@ class UpdateTenantDomainActionIntegrationTest extends TestCase
         // 1. Arrange
         $tenant = Tenant::forceCreate([
             'name'      => 'Crash Store',
+            'email'     => 'admin@crash.myapp.com',
+            'plan'      => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain'    => 'crash.myapp.com',
             'database'  => 'crash_db_schema',
         ]);

@@ -29,6 +29,8 @@ class ProvisionNewTenantAction
                 // 1. Create the base record in the landlord database
                 $tenant = Tenant::create([
                     'name' => $tenantData['name'],
+                    'email' => $tenantData['email'],
+                    'plan' => $tenantData['plan'] ?? \VHAP\Core\Enums\TenantPlan::FREE->value,
                     'domain' => $tenantData['domain'],
                     'database' => $tenantData['database'],
                 ]);

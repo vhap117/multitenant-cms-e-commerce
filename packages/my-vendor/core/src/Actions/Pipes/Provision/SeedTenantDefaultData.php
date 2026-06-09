@@ -3,7 +3,7 @@
 namespace VHAP\Core\Actions\Pipes\Provision;
 
 use Closure;
-use Spatie\Permission\Models\Role;
+use VHAP\Core\Models\Role;
 use VHAP\Core\Models\Tenant;
 
 class SeedTenantDefaultData
@@ -14,7 +14,7 @@ class SeedTenantDefaultData
         $tenant->makeCurrent();
 
         // 2. Safely bootstrap required tenant core roles
-        Role::on('tenant')->firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
 
         return $next($tenant);
     }

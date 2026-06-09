@@ -13,6 +13,7 @@ class ValidateDomainAvailability
         // Check if the domain exists, excluding the current tenant (in case they submit their current domain)
         $isTaken = Tenant::where('domain', $payload->newDomain)
                          ->where('id', '!=', $payload->tenant->id)
+                         ->where('provisioning_status', '!=', 'failed')
                          ->exists();
 
         if ($isTaken) {

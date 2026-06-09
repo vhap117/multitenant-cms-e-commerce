@@ -25,6 +25,22 @@ class CoreServiceProvider extends ServiceProvider
                 'driver' => 'eloquent',
                 'model' => \VHAP\Core\Models\LandlordUser::class,
             ], config('auth.providers.landlord_users', [])),
+
+            'auth.providers.tenant_users' => array_merge([
+                'driver' => 'eloquent',
+                'model' => \VHAP\Core\Models\User::class,
+            ], config('auth.providers.tenant_users', [])),
+
+            'auth.passwords.tenant_users' => array_merge([
+                'provider' => 'tenant_users',
+                'table' => 'password_reset_tokens',
+                'expire' => 60,
+                'throttle' => 60,
+                'connection' => 'tenant',
+            ], config('auth.passwords.tenant_users', [])),
+
+            'permission.models.role' => \VHAP\Core\Models\Role::class,
+            'permission.models.permission' => \VHAP\Core\Models\Permission::class,
         ]);
 
         // Inject Spatie Multitenancy configuration dynamically
@@ -33,7 +49,9 @@ class CoreServiceProvider extends ServiceProvider
             'multitenancy.landlord_database_connection_name' => 'landlord',
             'multitenancy.switch_tenant_tasks' => [
                 \Spatie\Multitenancy\Tasks\SwitchTenantDatabaseTask::class,
+                \VHAP\Core\Tasks\SwitchSpatiePermissionConnectionTask::class,
             ],
+            'multitenancy.tenant_model' => \VHAP\Core\Models\Tenant::class,
         ]);
 
         // Dynamically inject Landlord and Tenant database connections

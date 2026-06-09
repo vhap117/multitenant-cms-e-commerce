@@ -21,53 +21,71 @@ class ProvisionNewTenantAction
      * @return Tenant
      * @throws Throwable
      */
-    public function execute(array $tenantData): Tenant
+    public function execute(\VHAP\Core\Data\ProvisionTenantData $dto, ?Tenant $tenant = null): Tenant
     {
-        // Wrap everything in a Landlord database transaction.
-        return DB::connection('landlord')->transaction(function () use ($tenantData) {
-            try {
-                // 1. Create the base record in the landlord database
-                $tenant = Tenant::create([
-                    'name' => $tenantData['name'],
-                    'email' => $tenantData['email'],
-                    'plan' => $tenantData['plan'] ?? \VHAP\Core\Enums\TenantPlan::FREE->value,
-                    'domain' => $tenantData['domain'],
-                    'database' => $tenantData['database'],
-                ]);
-
-                // 2. Wire the pipes together and send the Tenant through them
-                return Pipeline::send($tenant)
-                    ->through([
-                        CreateTenantDatabase::class,
-                        RunTenantMigrations::class,
-                        SeedTenantDefaultData::class,
-                    ])
-                    ->then(function (Tenant $provisionedTenant) use ($tenantData) {
-                        // This closure only executes if all pipes pass successfully.
-                        event(new \VHAP\Core\Events\TenantProvisioned($provisionedTenant, $tenantData));
-
-                        $provisionedTenant->forgetCurrent();
-                        
-                        return $provisionedTenant;
-                    });
-                    
-            } catch (Throwable $exception) {
-                // Log the critical failure for debugging
-                Log::error('Tenant provisioning pipeline failed.', [
-                    'domain' => $tenantData['domain'] ?? 'unknown',
-                    'error' => $exception->getMessage(),
-                    'trace' => $exception->getTraceAsString(),
-                ]);
-
-                // Optional: If you are using SQLite in local development, 
-                // you might want to add custom cleanup logic here to delete 
-                // the physical .sqlite file so you don't leave orphaned files after a failure.
-                $this->cleanupFailedDatabase($tenantData['database'] ?? null);
-
-                // Re-throw the exception so the DB transaction rolls back the Landlord record
-                throw $exception;
+        try {
+            if (!$tenant) {
+                $tenant = Tenant::where('domain', $dto->domain)->first();
             }
-        });
+
+            if (!$tenant) {
+                $tenant = Tenant::create([
+                    'name' => $dto->name,
+                    'email' => $dto->email,
+                    'plan' => $dto->plan->value,
+                    'domain' => $dto->domain,
+                    'database' => $dto->database,
+                    'provisioning_status' => 'provisioning',
+                ]);
+            } else {
+                $tenant->update(['provisioning_status' => 'provisioning']);
+            }
+
+            // 2. Wire the pipes together and send the Tenant through them
+            return Pipeline::send($tenant)
+                ->through([
+                    CreateTenantDatabase::class,
+                    RunTenantMigrations::class,
+                    SeedTenantDefaultData::class,
+                ])
+                ->then(function (Tenant $provisionedTenant) use ($dto) {
+                    // This closure only executes if all pipes pass successfully.
+                    $adminData = $dto->adminUser ?? new \VHAP\Core\Data\TenantAdminUserData(
+                        name: $dto->name,
+                        email: $dto->email,
+                        password: 'default_placeholder'
+                    );
+
+                    $provisionedTenant->update([
+                        'provisioning_status' => 'active',
+                        'is_active' => true,
+                        'provisioning_data' => null,
+                    ]);
+
+                    event(new \VHAP\Core\Events\TenantProvisioned($provisionedTenant, $adminData));
+
+                    $provisionedTenant->forgetCurrent();
+                    
+                    return $provisionedTenant;
+                });
+                
+        } catch (Throwable $exception) {
+            // Log the critical failure for debugging
+            Log::error('Tenant provisioning pipeline failed.', [
+                'domain' => $dto->domain,
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            if (isset($tenant)) {
+                $tenant->update(['provisioning_status' => 'failed']);
+            }
+
+            $this->cleanupFailedDatabase($dto->database);
+
+            // Re-throw the exception
+            throw $exception;
+        }
     }
 
 /**
@@ -80,12 +98,20 @@ class ProvisionNewTenantAction
         }
 
         $driver = config('database.connections.tenant.driver');
+        $actualPath = config('database.connections.tenant.database');
         
-        if ($driver === 'sqlite' && File::exists($databaseName)) {
+        $pathToDelete = File::exists($actualPath) ? $actualPath : (File::exists($databaseName) ? $databaseName : null);
+        
+        if ($driver === 'sqlite' && $pathToDelete) {
             // FORCE PHP/PDO to close the connection and release the OS file lock
+            DB::disconnect('tenant');
             DB::purge('tenant'); 
             
-            File::delete($databaseName); 
+            try {
+                File::delete($pathToDelete); 
+            } catch (Throwable $e) {
+                Log::warning('Failed to delete SQLite database file during cleanup: ' . $e->getMessage());
+            }
         }
     }
 }

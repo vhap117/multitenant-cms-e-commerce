@@ -21,11 +21,6 @@ class ProvisionTenantAdminListener
 
         try {
             $this->provisioner->provision($event->adminData);
-
-            $user = User::where('email', $event->adminData['email'])->first();
-            if ($user) {
-                event(new Registered($user));
-            }
         } finally {
             $tenant->forgetCurrent();
         }

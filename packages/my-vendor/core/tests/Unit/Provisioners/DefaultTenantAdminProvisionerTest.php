@@ -6,7 +6,7 @@ use VHAP\Core\Tests\TestCase;
 use VHAP\Core\Provisioners\DefaultTenantAdminProvisioner;
 use VHAP\Core\Models\Tenant;
 use VHAP\Core\Models\User;
-use Spatie\Permission\Models\Role;
+use VHAP\Core\Models\Role;
 
 class DefaultTenantAdminProvisionerTest extends TestCase
 {
@@ -74,16 +74,16 @@ class DefaultTenantAdminProvisionerTest extends TestCase
         $tenant->makeCurrent();
 
         // Since the Spatie tables now exist in SQLite memory, we can create the role
-        Role::on('tenant')->create(['name' => 'Super Admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'Super Admin', 'guard_name' => 'web']);
 
         $provisioner = new DefaultTenantAdminProvisioner();
 
         // 2. Act
-        $provisioner->provision([
-            'name' => 'System Admin',
-            'email' => 'admin@acme.myapp.com',
-            'password' => 'secret',
-        ]);
+        $provisioner->provision(new \VHAP\Core\Data\TenantAdminUserData(
+            name: 'System Admin',
+            email: 'admin@acme.myapp.com',
+            password: 'secret',
+        ));
 
         // 3. Assert
         $this->assertDatabaseHas('users', [
@@ -91,7 +91,7 @@ class DefaultTenantAdminProvisionerTest extends TestCase
             'email' => 'admin@acme.myapp.com',
         ], 'tenant'); 
 
-        $user = User::on('tenant')->where('email', 'admin@acme.myapp.com')->first();
+        $user = User::where('email', 'admin@acme.myapp.com')->first();
         
         $this->assertTrue($user->hasRole('Super Admin'));
         

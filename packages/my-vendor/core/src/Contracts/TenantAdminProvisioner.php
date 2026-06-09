@@ -7,5 +7,5 @@ interface TenantAdminProvisioner
     /**
      * Bootstraps the initial root user and assigns roles for a new tenant.
      */
-    public function provision(array $userData): void;
+    public function provision(\VHAP\Core\Data\TenantAdminUserData $adminData): void;
 }

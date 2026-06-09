@@ -17,6 +17,7 @@ class CreateTenant extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         // 1. Resolve and execute the core package's action
-        return app(ProvisionNewTenantAction::class)->execute($data);
+        $dto = \VHAP\Core\Data\ProvisionTenantData::fromArray($data);
+        return app(ProvisionNewTenantAction::class)->execute($dto);
     }
 }

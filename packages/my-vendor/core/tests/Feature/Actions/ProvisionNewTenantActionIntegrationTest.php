@@ -47,13 +47,18 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
         }
 
         $action = new ProvisionNewTenantAction();
-        $tenantData = [
-            'name'     => 'Integration Store',
-            'domain'   => 'integration.myapp.com',
-            'database' => $databaseFilename,
-            'email'    => 'admin@integration.myapp.com',
-            'password' => 'secret123',
-        ];
+        $tenantData = new \VHAP\Core\Data\ProvisionTenantData(
+            name: 'Integration Store',
+            email: 'admin@integration.myapp.com',
+            domain: 'integration.myapp.com',
+            database: $databaseFilename,
+            plan: \VHAP\Core\Enums\TenantPlan::FREE,
+            adminUser: new \VHAP\Core\Data\TenantAdminUserData(
+                name: 'Integration Store Admin',
+                email: 'admin@integration.myapp.com',
+                password: 'secret123'
+            )
+        );
 
         // 2. Act: We run the Action exactly as a Controller would 
         // Notice we did NOT bind any fake pipes into the container!
@@ -107,13 +112,18 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
         });
 
         $action = new ProvisionNewTenantAction();
-        $tenantData = [
-            'name'     => 'Bad Integration Store',
-            'domain'   => 'bad-integration.myapp.com',
-            'database' => $databaseFilename,
-            'email'    => 'admin@bad-integration.myapp.com',
-            'password' => 'secret123',
-        ];
+        $tenantData = new \VHAP\Core\Data\ProvisionTenantData(
+            name: 'Bad Integration Store',
+            email: 'admin@bad-integration.myapp.com',
+            domain: 'bad-integration.myapp.com',
+            database: $databaseFilename,
+            plan: \VHAP\Core\Enums\TenantPlan::FREE,
+            adminUser: new \VHAP\Core\Data\TenantAdminUserData(
+                name: 'Bad Integration Store Admin',
+                email: 'admin@bad-integration.myapp.com',
+                password: 'secret123'
+            )
+        );
 
         // 2. Act & Assert Expectation
         $this->expectException(RuntimeException::class);
@@ -124,13 +134,19 @@ class ProvisionNewTenantActionIntegrationTest extends TestCase
         } finally {
             // 3. Assert Cleanup happens even if an exception is thrown!
             
-            // A. Assert the database transaction rolled back, removing the tenant record from Landlord DB.
-            $this->assertDatabaseMissing('tenants', [
+            // A. Assert the database transaction rolled back, OR in our new flow, the tenant is marked as failed.
+            $this->assertDatabaseHas('tenants', [
                 'domain' => 'bad-integration.myapp.com',
+                'provisioning_status' => 'failed',
             ], 'landlord');
 
             // B. Assert the physical SQlite file was deleted by the cleanupFailedDatabase fallback routine.
             $this->assertFalse(File::exists($databaseFilename), 'The physical SQLite file was NOT deleted after a pipeline failure.');
+            
+            // Clean up manually just in case the test failed to delete it
+            if (File::exists($databaseFilename)) {
+                File::delete($databaseFilename);
+            }
         }
     }
 }

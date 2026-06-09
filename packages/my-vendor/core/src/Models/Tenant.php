@@ -33,6 +33,8 @@ class Tenant extends SpatieTenant implements BillableEntity
         'domain',
         'database',
         'is_active',
+        'provisioning_status',
+        'provisioning_data',
     ];
 
     /**
@@ -43,6 +45,7 @@ class Tenant extends SpatieTenant implements BillableEntity
         return [
             'plan' => TenantPlan::class,
             'is_active' => 'boolean',
+            'provisioning_data' => 'encrypted:array',
         ];
     }
 

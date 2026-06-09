@@ -32,6 +32,8 @@ class TenantFactory extends Factory
             'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
             'domain' => $slug . '.myapp.com',
             'database' => 'tenant_' . str_replace('-', '_', $slug),
+            'provisioning_status' => 'active',
+            'is_active' => true,
         ];
     }
 }

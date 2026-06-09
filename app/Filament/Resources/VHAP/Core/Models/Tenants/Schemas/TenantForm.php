@@ -26,7 +26,9 @@ class TenantForm
                         TextInput::make('email')
                             ->label('Primary Contact Email')
                             ->email()
-                            ->required(),
+                            ->required()
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn ($state, callable $set) => $set('admin_user.email', $state)),
 
                         Select::make('plan')
                             ->label('Subscription Plan')
@@ -48,6 +50,27 @@ class TenantForm
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->helperText('The dedicated database name for this tenant'),
+                    ]),
+
+                Section::make('Tenant Admin User')
+                    ->statePath('admin_user')
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Admin Name')
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('email')
+                            ->label('Admin Email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('password')
+                            ->label('Admin Password')
+                            ->password()
+                            ->required()
+                            ->maxLength(255),
                     ]),
             ]);
     }

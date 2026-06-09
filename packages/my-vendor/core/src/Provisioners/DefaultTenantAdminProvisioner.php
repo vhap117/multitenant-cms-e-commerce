@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\Hash;
 
 class DefaultTenantAdminProvisioner implements TenantAdminProvisioner
 {
-    public function provision(array $userData): void
+    public function provision(\VHAP\Core\Data\TenantAdminUserData $adminData): void
     {
         $user = User::create([
-            'name' => $userData['name'],
-            'email' => $userData['email'],
-            'password' => Hash::make($userData['password']),
+            'name' => $adminData->name,
+            'email' => $adminData->email,
+            'password' => Hash::make($adminData->password),
+            'email_verified_at' => now(),
         ]);
 
         // 3. Assign the Spatie Role 

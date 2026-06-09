@@ -46,13 +46,18 @@ class ProvisionNewTenantActionTest extends TestCase
         Event::fake();
 
         $action = new ProvisionNewTenantAction();
-        $tenantData = [
-            'name' => 'Acme Corp',
-            'domain' => 'acme.myapp.com',
-            'database' => 'tenant_acme_db',
-            'email' => 'admin@acme.myapp.com',
-            'password' => 'secret123',
-        ];
+        $tenantData = new \VHAP\Core\Data\ProvisionTenantData(
+            name: 'Acme Corp',
+            email: 'admin@acme.myapp.com',
+            domain: 'acme.myapp.com',
+            database: 'tenant_acme_db',
+            plan: \VHAP\Core\Enums\TenantPlan::FREE,
+            adminUser: new \VHAP\Core\Data\TenantAdminUserData(
+                name: 'Acme Admin',
+                email: 'admin@acme.myapp.com',
+                password: 'secret123'
+            )
+        );
 
         // 2. Act
         $tenant = $action->execute($tenantData);
@@ -64,15 +69,17 @@ class ProvisionNewTenantActionTest extends TestCase
             'name' => 'Acme Corp',
             'domain' => 'acme.myapp.com',
             'database' => 'tenant_acme_db',
+            'provisioning_status' => 'active',
+            'is_active' => true,
         ], 'landlord');
 
         Event::assertDispatched(TenantProvisioned::class, function ($event) use ($tenant, $tenantData) {
-            return $event->tenant->id === $tenant->id && $event->adminData === $tenantData;
+            return $event->tenant->id === $tenant->id && $event->adminData === $tenantData->adminUser;
         });
     }
 
     #[Test]
-    public function it_rolls_back_the_database_and_cleans_up_files_if_a_pipe_fails()
+    public function it_updates_status_to_failed_and_cleans_up_files_if_a_pipe_fails()
     {
         // 1. Arrange
         $dummyDbPath = 'dummy_tenant.sqlite';
@@ -80,7 +87,9 @@ class ProvisionNewTenantActionTest extends TestCase
         // MOCK THE FILE SYSTEM: 
         // We tell Laravel to expect a deletion attempt, without touching the physical OS.
         // This guarantees zero Error Handler leaks from physical OS file locks.
-        File::shouldReceive('exists')->with($dummyDbPath)->andReturn(true);
+        File::shouldReceive('exists')->andReturnUsing(function ($path) use ($dummyDbPath) {
+            return $path === $dummyDbPath;
+        });
         File::shouldReceive('delete')->with($dummyDbPath)->once()->andReturn(true);
 
         // The first pipe succeeds
@@ -109,13 +118,18 @@ class ProvisionNewTenantActionTest extends TestCase
         });
 
         $action = new ProvisionNewTenantAction();
-        $tenantData = [
-            'name' => 'Bad Tenant',
-            'domain' => 'bad.myapp.com',
-            'database' => $dummyDbPath,
-            'email' => 'admin@bad.myapp.com',
-            'password' => 'secret123',
-        ];
+        $tenantData = new \VHAP\Core\Data\ProvisionTenantData(
+            name: 'Bad Tenant',
+            email: 'admin@bad.myapp.com',
+            domain: 'bad.myapp.com',
+            database: $dummyDbPath,
+            plan: \VHAP\Core\Enums\TenantPlan::FREE,
+            adminUser: new \VHAP\Core\Data\TenantAdminUserData(
+                name: 'Bad Admin',
+                email: 'admin@bad.myapp.com',
+                password: 'secret123'
+            )
+        );
 
         // 2. Act & Assert
         try {
@@ -125,10 +139,11 @@ class ProvisionNewTenantActionTest extends TestCase
             $this->assertEquals('Migration syntax error!', $e->getMessage());
         }
 
-        // 3. Verify Rollback
-        // The database transaction should have rolled back the insert
-        $this->assertDatabaseMissing('tenants', [
+        // 3. Verify Failure State
+        // The Tenant record should remain, but marked as failed
+        $this->assertDatabaseHas('tenants', [
             'domain' => 'bad.myapp.com',
+            'provisioning_status' => 'failed',
         ], 'landlord');
 
         Event::assertNotDispatched(TenantProvisioned::class);

@@ -19,6 +19,7 @@ class ValidateDomainAvailabilityTest extends TestCase
             'domain' => 'store-a.example.com',
             'database' => 'tenant_1',
             'is_active' => true,
+            'provisioning_status' => 'active',
         ]);
 
         $payload = (object)[
@@ -53,6 +54,7 @@ class ValidateDomainAvailabilityTest extends TestCase
             'domain' => 'store-a.example.com',
             'database' => 'tenant_1',
             'is_active' => true,
+            'provisioning_status' => 'active',
         ]);
 
         $payload = (object)[
@@ -85,6 +87,7 @@ class ValidateDomainAvailabilityTest extends TestCase
             'domain' => 'taken-domain.example.com',
             'database' => 'tenant_1',
             'is_active' => true,
+            'provisioning_status' => 'active',
         ]);
         
         $tenantB = Tenant::forceCreate([
@@ -94,6 +97,7 @@ class ValidateDomainAvailabilityTest extends TestCase
             'domain' => 'store-b.example.com',
             'database' => 'tenant_2',
             'is_active' => true,
+            'provisioning_status' => 'active',
         ]);
 
         // Attempting to change Tenant B's domain to Tenant A's domain
@@ -110,5 +114,49 @@ class ValidateDomainAvailabilityTest extends TestCase
 
         // Act
         $pipe->handle($payload, function () {});
+    }
+
+    public function test_it_allows_domain_if_taken_by_failed_tenant()
+    {
+        // Arrange: Create a failed tenant with the desired domain
+        Tenant::forceCreate([
+            'name' => 'Failed Store',
+            'email' => 'failed@example.com',
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
+            'domain' => 'desired-domain.example.com',
+            'database' => 'tenant_1',
+            'is_active' => false,
+            'provisioning_status' => 'failed',
+        ]);
+
+        $tenantB = Tenant::forceCreate([
+            'name' => 'Store B',
+            'email' => 'admin@store-b.example.com',
+            'plan' => \VHAP\Core\Enums\TenantPlan::FREE->value,
+            'domain' => 'store-b.example.com',
+            'database' => 'tenant_2',
+            'is_active' => true,
+            'provisioning_status' => 'active',
+        ]);
+
+        // Attempting to change Tenant B's domain to the failed tenant's domain
+        $payload = (object)[
+            'tenant' => $tenantB,
+            'newDomain' => 'desired-domain.example.com',
+        ];
+
+        $pipe = new ValidateDomainAvailability();
+        
+        $nextWasCalled = false;
+        $nextPipe = function () use (&$nextWasCalled) {
+            $nextWasCalled = true;
+            return 'success';
+        };
+
+        // Act
+        $result = $pipe->handle($payload, $nextPipe);
+
+        // Assert
+        $this->assertTrue($nextWasCalled);
     }
 }

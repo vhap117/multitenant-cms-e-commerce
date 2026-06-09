@@ -76,11 +76,11 @@ class ProvisionTenantAdminListenerTest extends TestCase
         $tenant->shouldReceive('makeCurrent')->once();
         $tenant->shouldReceive('forgetCurrent')->once();
 
-        $adminData = [
-            'name' => 'System Admin',
-            'email' => 'admin@test.com',
-            'password' => 'secret',
-        ];
+        $adminData = new \VHAP\Core\Data\TenantAdminUserData(
+            name: 'System Admin',
+            email: 'admin@test.com',
+            password: 'secret',
+        );
 
         // Mock the Provisioner contract
         $mockProvisioner = Mockery::mock(TenantAdminProvisioner::class);

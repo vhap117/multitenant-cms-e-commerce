@@ -10,7 +10,7 @@ class TenantProvisioned
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public Tenant $tenant, public array $adminData)
+    public function __construct(public Tenant $tenant, public \VHAP\Core\Data\TenantAdminUserData $adminData)
     {
     }
 }

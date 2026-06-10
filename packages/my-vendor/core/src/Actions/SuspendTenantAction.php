@@ -20,9 +20,9 @@ class SuspendTenantAction
      * @return Tenant
      * @throws Throwable
      */
-    public function execute(Tenant $tenant): Tenant
+    public function execute(Tenant $tenant, string $reason = 'Manual suspension'): Tenant
     {
-        return DB::connection('landlord')->transaction(function () use ($tenant) {
+        return DB::connection('landlord')->transaction(function () use ($tenant, $reason) {
             try {
                 return Pipeline::send($tenant)
                     ->through([
@@ -30,8 +30,8 @@ class SuspendTenantAction
                         TerminateTenantSessions::class,
                         DispatchSuspensionNotification::class,
                     ])
-                    ->then(function (Tenant $suspendedTenant) {
-                        Log::info("Tenant {$suspendedTenant->domain} has been successfully suspended.");
+                    ->then(function (Tenant $suspendedTenant) use ($reason) {
+                        Log::info("Tenant {$suspendedTenant->domain} has been successfully suspended. Reason: {$reason}");
                         return $suspendedTenant;
                     });
             } catch (Throwable $exception) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Listeners;
+namespace VHAP\Core\Listeners;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -8,7 +8,7 @@ use VHAP\Core\Events\TenantProvisioned;
 use Spatie\Multitenancy\Jobs\NotTenantAware;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\StoreReadyEmail;
+use VHAP\Core\Notifications\StoreReadyEmail;
 
 class SendStoreReadyNotification implements ShouldQueue, NotTenantAware
 {

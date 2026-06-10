@@ -45,13 +45,14 @@ class CoreServiceProvider extends ServiceProvider
 
         // Inject Spatie Multitenancy configuration dynamically
         config([
+            'multitenancy.tenant_finder' => \Spatie\Multitenancy\TenantFinder\DomainTenantFinder::class,
+            'multitenancy.tenant_model' => \VHAP\Core\Models\Tenant::class,
             'multitenancy.tenant_database_connection_name' => 'tenant',
             'multitenancy.landlord_database_connection_name' => 'landlord',
             'multitenancy.switch_tenant_tasks' => [
                 \Spatie\Multitenancy\Tasks\SwitchTenantDatabaseTask::class,
                 \VHAP\Core\Tasks\SwitchSpatiePermissionConnectionTask::class,
             ],
-            'multitenancy.tenant_model' => \VHAP\Core\Models\Tenant::class,
         ]);
 
         // Dynamically inject Landlord and Tenant database connections
@@ -113,6 +114,11 @@ class CoreServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(
             \VHAP\Core\Events\TenantProvisioned::class,
             \VHAP\Core\Listeners\ProvisionTenantAdminListener::class,
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \VHAP\Core\Events\TenantProvisioned::class,
+            \VHAP\Core\Listeners\SendStoreReadyNotification::class,
         );
 
         \Illuminate\Support\Facades\Event::listen(

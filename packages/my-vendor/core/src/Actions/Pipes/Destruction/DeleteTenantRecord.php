@@ -9,8 +9,8 @@ class DeleteTenantRecord
 {
     public function handle(Tenant $tenant, Closure $next)
     {
-        // Delete the tenant record from the central platform database
-        $tenant->delete();
+        // Completely wipe the tenant record from the central platform database (bypass soft deletes)
+        $tenant->forceDelete();
 
         return $next($tenant);
     }

@@ -23,30 +23,36 @@ class DestroyTenantEnvironmentAction
      */
     public function execute(Tenant $tenant): void
     {
-        DB::connection('landlord')->transaction(function () use ($tenant) {
-            try {
+        try {
+            DB::connection('landlord')->transaction(function () use ($tenant) {
                 // Optional: If you use spatie/db-dumper, you would add an 
                 // ArchiveTenantDatabase::class pipe here to send a backup to S3 first.
 
                 Pipeline::send($tenant)
                     ->through([
-                        DropTenantDatabase::class,
-                        DeleteTenantStorageDirectory::class,
                         DeleteTenantRecord::class,
+                        DeleteTenantStorageDirectory::class,
                     ])
                     ->then(function (Tenant $tenant) {
-                        Log::info("Tenant environment for {$tenant->domain} has been permanently destroyed.");
+                        Log::info("Tenant record and storage for {$tenant->domain} deleted within transaction.");
                     });
-                    
-            } catch (Throwable $exception) {
-                Log::critical('CRITICAL FAILURE: Tenant destruction pipeline failed mid-execution.', [
-                    'tenant_id' => $tenant->id,
-                    'domain' => $tenant->domain,
-                    'error' => $exception->getMessage(),
-                ]);
+            });
 
-                throw $exception;
-            }
-        });
+            // After the transaction completes successfully, execute the DDL statement.
+            app(DropTenantDatabase::class)->handle($tenant, function ($tenant) {
+                return $tenant;
+            });
+            
+            Log::info("Tenant environment for {$tenant->domain} has been permanently destroyed.");
+
+        } catch (Throwable $exception) {
+            Log::critical('CRITICAL FAILURE: Tenant destruction pipeline failed mid-execution.', [
+                'tenant_id' => $tenant->id ?? null,
+                'domain' => $tenant->domain ?? null,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
+        }
     }
 }

@@ -87,7 +87,7 @@ class SuspendTenantActionIntegrationTest extends TestCase
         // We expect the success log to be executed
         Log::shouldReceive('info')
             ->once()
-            ->with("Tenant active.myapp.com has been successfully suspended.");
+            ->with("Tenant active.myapp.com has been successfully suspended. Reason: Manual suspension");
 
         // 2. Act: Run the real pipes across the real database
         $action->execute($tenant);

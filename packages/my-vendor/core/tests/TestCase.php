@@ -31,6 +31,9 @@ class TestCase extends OrchestraTestCase
 
     protected function getEnvironmentSetUp($app)
     {
+        // Require an APP_KEY for password reset tokens and other cryptographic features during tests
+        $app['config']->set('app.key', 'base64:3u1j4Jd9r8+t1x/sXbJv0L6Z4oNq7P3B+xLq7fM2R0E=');
+
         // Prevent Spatie from triggering database queries for cache clearing during tests
         $app['config']->set('cache.default', 'array');
         // 1. Setup the Landlord connection (in-memory)

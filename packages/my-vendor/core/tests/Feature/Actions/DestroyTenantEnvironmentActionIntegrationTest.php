@@ -70,7 +70,11 @@ class DestroyTenantEnvironmentActionIntegrationTest extends TestCase
 
         $action = new DestroyTenantEnvironmentAction();
 
-        // We expect the global log to record this critical action
+        // We expect the global log to record these critical actions
+        Log::shouldReceive('info')
+            ->once()
+            ->with("Tenant record and storage for doomed.myapp.com deleted within transaction.");
+            
         Log::shouldReceive('info')
             ->once()
             ->with("Tenant environment for doomed.myapp.com has been permanently destroyed.");
@@ -87,8 +91,8 @@ class DestroyTenantEnvironmentActionIntegrationTest extends TestCase
         $this->assertFalse(Storage::disk('local')->exists("tenants/{$tenant->id}/private_file.txt"));
         $this->assertFalse(Storage::disk('public')->exists("tenants/{$tenant->id}/public_logo.png"));
 
-        // C. Assert the tenant record was successfully soft-deleted from the landlord DB connection
-        $this->assertSoftDeleted('tenants', [
+        // C. Assert the tenant record was completely wiped from the landlord DB connection
+        $this->assertDatabaseMissing('tenants', [
             'id' => $tenant->id,
         ], 'landlord');
     }
@@ -147,11 +151,10 @@ class DestroyTenantEnvironmentActionIntegrationTest extends TestCase
                 'id' => $tenant->id,
             ], 'landlord');
             
-            // NOTE: Even though the landlord database rolled back, the physical `.sqlite` file
-            // and the `tenants/id/` Storage directory were already permanently unlinked by the 
-            // previous pipes because OS file interactions cannot organically participate in 
-            // SQL Transactions! This is an expected un-recoverable state.
-            $this->assertFalse(File::exists($dbPath));
+            // NOTE: Because we refactored the DropTenantDatabase pipe to run AFTER the transaction 
+            // succeeds, if a failure occurs inside the transaction, the physical `.sqlite` file
+            // is safely preserved! 
+            $this->assertTrue(File::exists($dbPath));
         }
     }
 }

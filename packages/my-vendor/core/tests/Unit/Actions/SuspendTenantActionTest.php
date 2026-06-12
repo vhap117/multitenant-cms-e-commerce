@@ -29,7 +29,7 @@ class SuspendTenantActionTest extends TestCase
         // We expect Log::info to be called once upon success
         Log::shouldReceive('info')
             ->once()
-            ->with("Tenant test.example.com has been successfully suspended.");
+            ->with("Tenant test.example.com has been successfully suspended. Reason: Manual suspension");
 
         $action = new SuspendTenantAction();
 

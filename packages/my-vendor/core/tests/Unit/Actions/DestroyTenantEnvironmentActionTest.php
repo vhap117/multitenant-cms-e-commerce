@@ -27,7 +27,11 @@ class DestroyTenantEnvironmentActionTest extends TestCase
         $tenant->id = 1;
         $tenant->domain = 'test.example.com';
 
-        // We expect Log::info to be called once upon success
+        // We expect Log::info to be called for both the transaction and the DDL statement
+        Log::shouldReceive('info')
+            ->once()
+            ->with("Tenant record and storage for test.example.com deleted within transaction.");
+
         Log::shouldReceive('info')
             ->once()
             ->with("Tenant environment for test.example.com has been permanently destroyed.");
@@ -52,17 +56,17 @@ class DestroyTenantEnvironmentActionTest extends TestCase
 
         $this->bindFakePipe(DropTenantDatabase::class);
 
-        // The second pipe throws exception
-        $this->app->bind(DeleteTenantStorageDirectory::class, function () {
+        // The first pipe inside the transaction throws an exception
+        $this->app->bind(DeleteTenantRecord::class, function () {
             return new class {
                 public function handle($tenant, $next) {
-                    throw new Exception('Storage unreachable!');
+                    throw new Exception('Database locked!');
                 }
             };
         });
 
-        // The third pipe should NOT be executed
-        $this->app->bind(DeleteTenantRecord::class, function () {
+        // The second pipe should NOT be executed
+        $this->app->bind(DeleteTenantStorageDirectory::class, function () {
             return new class {
                 public function handle($tenant, $next) {
                     throw new Exception('Pipeline did not halt!');
@@ -76,7 +80,7 @@ class DestroyTenantEnvironmentActionTest extends TestCase
             ->with('CRITICAL FAILURE: Tenant destruction pipeline failed mid-execution.', [
                 'tenant_id' => 99,
                 'domain' => 'bad.example.com',
-                'error' => 'Storage unreachable!',
+                'error' => 'Database locked!',
             ]);
 
         $action = new DestroyTenantEnvironmentAction();
@@ -86,7 +90,7 @@ class DestroyTenantEnvironmentActionTest extends TestCase
             $action->execute($tenant);
             $this->fail('The exception was swallowed and not re-thrown by the action.');
         } catch (Exception $e) {
-            $this->assertEquals('Storage unreachable!', $e->getMessage());
+            $this->assertEquals('Database locked!', $e->getMessage());
         }
     }
 
